@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+  <div class="card" style="max-width:520px; margin:0 auto;">
+    <h1>Welcome back</h1>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="field">
+          {{ form.username.label_tag }}
+          {{ form.username }}
+          {% if form.username.errors %}
+            <ul class="errorlist" role="alert">
+              {% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+        <div class="field">
+          {{ form.password.label_tag }}
+          {{ form.password }}
+          {% if form.password.errors %}
+            <ul class="errorlist" role="alert">
+              {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+          {% if form.non_field_errors %}
+            <ul class="errorlist" role="alert">
+              {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      </div>
+      <p style="margin-top:14px;">
+        <button class="btn" type="submit">Sign in</button>
+      </p>
+    </form>
+    <p class="field-help" style="margin-top:10px;">
+      New here? <a href="{% url 'accounts:signup' %}">Create an account</a>.
+    </p>
+  </div>
+{% endblock %}

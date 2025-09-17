@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+  <div class="card">
+    <h1>Welcome to Job Board</h1>
+    <p>Create a profile with your headline, skills, education, and experience so recruiters can discover you.</p>
+    {% if user.is_authenticated %}
+      <p style="margin-top:12px;">
+        <a class="btn" href="{% url 'profiles:edit_profile' %}">Edit my profile</a>
+        <a class="btn btn-outline" href="{% url 'profiles:my_profile' %}" style="margin-left:8px;">View profile</a>
+      </p>
+    {% else %}
+      <p style="margin-top:12px;">
+        <a class="btn" href="{% url 'accounts:signup' %}">Get started</a>
+        <a class="btn btn-outline" href="{% url 'login' %}" style="margin-left:8px;">Log in</a>
+      </p>
+    {% endif %}
+  </div>
+{% endblock %}
