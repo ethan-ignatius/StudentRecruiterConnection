@@ -38,6 +38,32 @@ form { display: block; }
 .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 .form-grid .field { display: flex; flex-direction: column; gap: 6px; }
 
+/* per-section visibility controls */
+.section { margin: 8px 0 12px; }
+.section-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.section-title { margin:0; font-weight:600; }
+
+/* hide the real checkbox but keep it in the form */
+.sr-only {
+  position:absolute !important; width:1px; height:1px;
+  padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;
+}
+
+.vis-toggle { border:0; background:transparent; cursor:pointer; padding:4px; line-height:0; }
+.vis-toggle svg { opacity:.55; transition:transform .15s, opacity .15s; }
+.vis-toggle:hover svg { opacity:.85; transform:scale(1.05); }
+.vis-toggle.is-on svg { opacity:1; }
+
+/* Visually hide but keep form-submittable */
+.sr-only {
+  position:absolute !important;
+  width:1px; height:1px;
+  padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0);
+  white-space:nowrap; border:0;
+}
+
+
 label { font-weight: 600; color: #000; }
 input[type="text"], input[type="email"], input[type="password"], select, textarea { width: 100%; border: 1px solid #d1d5db; background: #fff; border-radius: 10px; padding: 9px 11px; font: inherit; color: #000; }
 input:focus, select:focus, textarea:focus { outline: 2px solid #93c5fd; outline-offset: 2px; }

@@ -15,7 +15,7 @@ class _StartEndDateValidationMixin(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for name, field in self.fields.items():
-            if name in {"current", "end_date", "id", "DELETE"}:
+            if name in {"current", "end_date", "id", "DELETE", "show"}:
                 continue
             field.required = True
         # ensure the checkbox isn't forced to be checked
@@ -54,7 +54,7 @@ class _StartEndDateValidationMixin(forms.ModelForm):
 class EducationForm(_StartEndDateValidationMixin, forms.ModelForm):
     class Meta:
         model = Education
-        fields = ("school", "degree", "field_of_study", "start_date", "end_date", "current", "description")
+        fields = ("school", "degree", "field_of_study", "start_date", "end_date", "current", "description", "show")
         widgets = {
             "start_date": forms.DateInput(format="%Y-%m-%d", attrs={"class": "js-date", "placeholder": "YYYY-MM-DD"}),
             "end_date": forms.DateInput(format="%Y-%m-%d", attrs={"class": "js-date", "placeholder": "YYYY-MM-DD"}),
@@ -62,9 +62,10 @@ class EducationForm(_StartEndDateValidationMixin, forms.ModelForm):
 
 
 class ExperienceForm(_StartEndDateValidationMixin, forms.ModelForm):
+    show = forms.BooleanField(required=False)
     class Meta:
         model = Experience
-        fields = ("title", "company", "start_date", "end_date", "current", "description")
+        fields = ("title", "company", "start_date", "end_date", "current", "description", "show")
         widgets = {
             "start_date": forms.DateInput(format="%Y-%m-%d", attrs={"class": "js-date", "placeholder": "YYYY-MM-DD"}),
             "end_date": forms.DateInput(format="%Y-%m-%d", attrs={"class": "js-date", "placeholder": "YYYY-MM-DD"}),
@@ -80,7 +81,14 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = JobSeekerProfile
-        fields = ("headline", "summary", "location")
+        fields = ("headline", "summary", "location", "show_headline", "show_summary", "show_location", "show_skills")
+
+        widgets = {
+            "show_headline": forms.CheckboxInput(),
+            "show_summary": forms.CheckboxInput(),
+            "show_location": forms.CheckboxInput(),
+            "show_skills": forms.CheckboxInput(),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -119,7 +127,7 @@ class LinkForm(forms.ModelForm):
     """All link fields required."""
     class Meta:
         model = Link
-        fields = ("kind", "label", "url")
+        fields = ("kind", "label", "url", "show")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -132,20 +140,20 @@ class LinkForm(forms.ModelForm):
 EducationFormSet = inlineformset_factory(
     JobSeekerProfile, Education,
     form=EducationForm,
-    fields=("school", "degree", "field_of_study", "start_date", "end_date", "current", "description"),
-    extra=1, can_delete=True
+    fields=("school", "degree", "field_of_study", "start_date", "end_date", "current", "description", "show"),
+    extra=0, can_delete=True
 )
 
 ExperienceFormSet = inlineformset_factory(
     JobSeekerProfile, Experience,
     form=ExperienceForm,
-    fields=("title", "company", "start_date", "end_date", "current", "description"),
-    extra=1, can_delete=True
+    fields=("title", "company", "start_date", "end_date", "current", "description", "show"),
+    extra=0, can_delete=True
 )
 
 LinkFormSet = inlineformset_factory(
     JobSeekerProfile, Link,
-    form=LinkForm,
-    fields=("kind", "label", "url"),
-    extra=1, can_delete=True
+    form=LinkForm, 
+    fields=("kind", "label", "url", "show"),
+    extra=0, can_delete=True
 )

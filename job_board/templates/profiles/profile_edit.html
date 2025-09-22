@@ -9,15 +9,97 @@
       {% csrf_token %}
       <section style="margin-top:8px;">
         <h2>Basics</h2>
-        <div class="form-grid">
-          {{ pform.headline.label_tag }}{{ pform.headline }}
-          {{ pform.location.label_tag }}{{ pform.location }}
+        <div class="section">
+          <div class="section-header">
+            <label for="{{ pform.headline.id_for_label }}" class="section-title">Headline</label>
+
+            {# hidden checkbox that actually stores the value #}
+            <input type="checkbox"
+                  id="{{ pform.show_headline.id_for_label }}"
+                  name="{{ pform.show_headline.html_name }}"
+                  {% if pform.show_headline.value %}checked{% endif %}
+                  class="sr-only">
+
+            {# eye icon button that flips the hidden checkbox #}
+            <button type="button"
+                    class="vis-toggle {% if pform.show_headline.value %}is-on{% endif %}"
+                    data-for="{{ pform.show_headline.id_for_label }}"
+                    aria-pressed="{{ pform.show_headline.value|yesno:'true,false' }}"
+                    title="{% if pform.show_headline.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+              <!-- use your SVG here; this is a simple eye -->
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+              </svg>
+            </button>
+          </div>
+          {{ pform.headline }}
+          </div>
+          <div class="section" style="margin-top:12px;">
+          <div class="section-header">
+            <label for="{{ pform.location.id_for_label }}" class="section-title">Location</label>
+
+            <input type="checkbox"
+                  id="{{ pform.show_location.id_for_label }}"
+                  name="{{ pform.show_location.html_name }}"
+                  {% if pform.show_location.value %}checked{% endif %}
+                  class="sr-only">
+
+            <button type="button"
+                    class="vis-toggle {% if pform.show_location.value %}is-on{% endif %}"
+                    data-for="{{ pform.show_location.id_for_label }}"
+                    aria-pressed="{{ pform.show_location.value|yesno:'true,false' }}"
+                    title="{% if pform.show_location.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+              </svg>
+            </button>
+          </div>
+          {{ pform.location }}
         </div>
-        <div style="margin-top:12px;">
-          {{ pform.summary.label_tag }}{{ pform.summary }}
+        <div class="section" style="margin-top:12px;">
+        <div class="section-header">
+          <label for="{{ pform.summary.id_for_label }}" class="section-title">Summary</label>
+
+          <input type="checkbox"
+                id="{{ pform.show_summary.id_for_label }}"
+                name="{{ pform.show_summary.html_name }}"
+                {% if pform.show_summary.value %}checked{% endif %}
+                class="sr-only">
+
+          <button type="button"
+                  class="vis-toggle {% if pform.show_summary.value %}is-on{% endif %}"
+                  data-for="{{ pform.show_summary.id_for_label }}"
+                  aria-pressed="{{ pform.show_summary.value|yesno:'true,false' }}"
+                  title="{% if pform.show_summary.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+            </svg>
+          </button>
         </div>
-        <div style="margin-top:12px;">
-          {{ pform.skills_csv.label_tag }}{{ pform.skills_csv }}
+        {{ pform.summary }}
+      </div>
+        <div class="section" style="margin-top:12px;">
+          <div class="section-header">
+            <label for="{{ pform.skills_csv.id_for_label }}" class="section-title">Skills</label>
+
+            <input type="checkbox"
+                  id="{{ pform.show_skills.id_for_label }}"
+                  name="{{ pform.show_skills.html_name }}"
+                  {% if pform.show_skills.value %}checked{% endif %}
+                  class="sr-only">
+
+            <button type="button"
+                    class="vis-toggle {% if pform.show_skills.value %}is-on{% endif %}"
+                    data-for="{{ pform.show_skills.id_for_label }}"
+                    aria-pressed="{{ pform.show_skills.value|yesno:'true,false' }}"
+                    title="{% if pform.show_skills.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+              </svg>
+            </button>
+          </div>
+
+          {{ pform.skills_csv }}
           <div class="field-help">{{ pform.skills_csv.help_text }}</div>
         </div>
       </section>
@@ -47,6 +129,28 @@
               {% endfor %}
             </ul>
             {% endif %}
+            <div class="section-header d-flex align-items-center">
+              <label class="section-title mb-0">Experience item</label>
+
+              {# real checkbox (hidden but submits) #}
+              <input type="checkbox"
+                    id="{{ form.show.id_for_label }}"
+                    name="{{ form.show.html_name }}"
+                    {% if form.show.value %}checked{% endif %}
+                    class="visually-hidden">
+
+              {# eye icon at far right #}
+              <button type="button"
+                      class="vis-toggle {% if form.show.value %}is-on{% endif %}"
+                      data-for="{{ form.show.id_for_label }}"
+                      aria-pressed="{{ form.show.value|yesno:'true,false' }}"
+                      title="{% if form.show.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                </svg>
+              </button>
+            </div>
+
 
             <div class="form-grid">
               <div class="field">{{ form.title.label_tag }}{{ form.title }}</div>
@@ -71,6 +175,26 @@
         <template id="exp-empty-form">
           {{ xformset.empty_form.id }}
           <div class="card fs-row" style="margin:10px 0;" data-prefix="exp-__prefix__">
+            <div class="section-header d-flex align-items-center">
+              <label class="section-title mb-0">Experience item</label>
+
+              <input type="checkbox"
+                    id="{{ xformset.empty_form.show.id_for_label }}"
+                    name="{{ xformset.empty_form.show.html_name }}"
+                    {% if xformset.empty_form.show.value %}checked{% endif %}
+                    class="visually-hidden">
+
+              <button type="button"
+                      class="vis-toggle {% if form.show.value %}is-on{% endif %}"
+                      data-for="{{ form.show.id_for_label }}"
+                      aria-pressed="{{ form.show.value|yesno:'true,false' }}"
+                      title="{% if form.show.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                </svg>
+              </button>
+            </div>
+
             <div class="form-grid">
               <div class="field">{{ xformset.empty_form.title.label_tag }}{{ xformset.empty_form.title }}</div>
               <div class="field">{{ xformset.empty_form.company.label_tag }}{{ xformset.empty_form.company }}</div>
@@ -112,6 +236,26 @@
             </ul>
             {% endif %}
 
+            <div class="section-header">
+              <label class="section-title">Education item</label>
+
+              <input type="checkbox"
+                    id="{{ form.show.id_for_label }}"
+                    name="{{ form.show.html_name }}"
+                    {% if form.show.value %}checked{% endif %}
+                    class="sr-only">
+
+              <button type="button"
+                      class="vis-toggle {% if form.show.value %}is-on{% endif %}"
+                      data-for="{{ form.show.id_for_label }}"
+                      aria-pressed="{{ form.show.value|yesno:'true,false' }}"
+                      title="{% if form.show.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                </svg>
+              </button>
+            </div>
+
             <div class="form-grid">
               <div class="field">{{ form.school.label_tag }}{{ form.school }}</div>
               <div class="field">{{ form.degree.label_tag }}{{ form.degree }}</div>
@@ -134,6 +278,24 @@
 
         <template id="edu-empty-form">
           {{ eformset.empty_form.id }}
+          <div class="section-header">
+            <label class="section-title">Education item</label>
+
+            <input type="checkbox"
+                  id="{{ eformset.empty_form.show.id_for_label }}"
+                  name="{{ eformset.empty_form.show.html_name }}"
+                  {% if eformset.empty_form.show.value %}checked{% endif %}
+                  class="sr-only">
+
+            <button type="button"
+                    class="vis-toggle {% if eformset.empty_form.show.value %}is-on{% endif %}"
+                    data-for="{{ eformset.empty_form.show.id_for_label }}"
+                    aria-pressed="{{ eformset.empty_form.show.value|yesno:'true,false' }}"
+                    title="{% if eformset.empty_form.show.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
+            </button>
+          </div>
+
           <div class="card fs-row" style="margin:10px 0;" data-prefix="edu-__prefix__">
             <div class="form-grid">
               <div class="field">{{ eformset.empty_form.school.label_tag }}{{ eformset.empty_form.school }}</div>
@@ -176,6 +338,25 @@
               {% endfor %}
             </ul>
             {% endif %}
+            <div class="section-header">
+              <label class="section-title">Link</label>
+
+              <input type="checkbox"
+                    id="{{ form.show.id_for_label }}"
+                    name="{{ form.show.html_name }}"
+                    {% if form.show.value %}checked{% endif %}
+                    class="sr-only">
+
+              <button type="button"
+                      class="vis-toggle {% if form.show.value %}is-on{% endif %}"
+                      data-for="{{ form.show.id_for_label }}"
+                      aria-pressed="{{ form.show.value|yesno:'true,false' }}"
+                      title="{% if form.show.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                </svg>
+              </button>
+            </div>
 
             <div class="form-grid">
               <label for="{{ form.kind.id_for_label }}">Type</label>{{ form.kind }}
@@ -192,6 +373,24 @@
 
         <template id="lnk-empty-form">
           {{ lformset.empty_form.id }}
+          <div class="section-header">
+            <label class="section-title">Link</label>
+
+            <input type="checkbox"
+                  id="{{ lformset.empty_form.show.id_for_label }}"
+                  name="{{ lformset.empty_form.show.html_name }}"
+                  {% if lformset.empty_form.show.value %}checked{% endif %}
+                  class="sr-only">
+
+            <button type="button"
+                    class="vis-toggle {% if lformset.empty_form.show.value %}is-on{% endif %}"
+                    data-for="{{ lformset.empty_form.show.id_for_label }}"
+                    aria-pressed="{{ lformset.empty_form.show.value|yesno:'true,false' }}"
+                    title="{% if lformset.empty_form.show.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
+            </button>
+          </div>
+
           <div class="card fs-row" style="margin:10px 0;" data-prefix="lnk-__prefix__">
             <div class="form-grid">
               <label for="{{ lformset.empty_form.kind.id_for_label }}">Type</label>{{ lformset.empty_form.kind }}
@@ -240,6 +439,20 @@
 
 <script>
 (function(){
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.vis-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.dataset.for);
+        if (!input) return;
+        input.checked = !input.checked;                      // flip the hidden checkbox
+        btn.classList.toggle('is-on', input.checked);        // update look
+        btn.setAttribute('aria-pressed', String(input.checked));
+        btn.title = input.checked ? 'Make hidden from recruiters'
+                                  : 'Make visible to recruiters';
+      });
+    });
+  });
+
   var dateOpts = { dateFormat: 'Y-m-d', locale: 'en' };
   try { if (window.flatpickr) { flatpickr('.js-date', dateOpts); } } catch(e) {}
 
