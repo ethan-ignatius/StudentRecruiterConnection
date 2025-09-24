@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Find Jobs{% endblock %}
+
+{% block content %}
+<div class="search-header">
+  <h1>Find Your Next Job</h1>
+  <p class="text-muted">Search through {{ total_count }} active job posting{{ total_count|pluralize }}</p>
+</div>
+
+<!-- Search Form -->
+<div class="card search-card">
+  <form method="get" class="search-form">
+    <div class="search-row">
+      <div class="search-field search-field-main">
+        {{ form.q.label_tag }}
+        {{ form.q }}
+        {% if form.q.errors %}
+          <ul class="errorlist">{% for error in form.q.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      
+      <div class="search-field">
+        {{ form.location.label_tag }}
+        {{ form.location }}
+        {% if form.location.errors %}
+          <ul class="errorlist">{% for error in form.location.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      
+      <div class="search-field">
+        <button type="submit" class="btn search-btn">Search Jobs</button>
+      </div>
+    </div>
+    
+    <!-- Advanced Filters -->
+    <details class="filters-section">
+      <summary class="filters-toggle">Advanced Filters</summary>
+      <div class="filters-grid">
+        <div class="field">
+          {{ form.skills.label_tag }}
+          {{ form.skills }}
+          {% if form.skills.help_text %}<div class="field-help">{{ form.skills.help_text }}</div>{% endif %}
+          {% if form.skills.errors %}
+            <ul class="errorlist">{% for error in form.skills.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+        
+        <div class="field">
+          {{ form.work_type.label_tag }}
+          {{ form.work_type }}
+          {% if form.work_type.errors %}
+            <ul class="errorlist">{% for error in form.work_type.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+        
+        <div class="field">
+          {{ form.salary_min.label_tag }}
+          {{ form.salary_min }}
+          {% if form.salary_min.errors %}
+            <ul class="errorlist">{% for error in form.salary_min.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+        
+        <div class="field">
+          {{ form.salary_max.label_tag }}
+          {{ form.salary_max }}
+          {% if form.salary_max.errors %}
+            <ul class="errorlist">{% for error in form.salary_max.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+        
+        <div class="field checkbox-field">
+          <label class="checkbox-label">
+            {{ form.visa_sponsorship }}
+            {{ form.visa_sponsorship.label }}
+          </label>
+        </div>
+      </div>
+    </details>
+    
+    {% if has_filters %}
+      <div class="active-filters">
+        <a href="{% url 'jobs:search' %}" class="clear-filters">Clear all filters</a>
+      </div>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Job Results -->
+{% if jobs %}
+  <div class="results-summary">
+    <p>{{ jobs.paginator.count }} job{{ jobs.paginator.count|pluralize }} found</p>
+  </div>
+  
+  <div class="job-list">
+    {% for job in jobs %}
+      <div class="job-card">
+        <div class="job-header">
+          <h3><a href="{% url 'jobs:detail' job.pk %}">{{ job.title }}</a></h3>
+          <div class="job-meta">
+            <span class="company">{{ job.company }}</span>
+            {% if job.location %}
+              <span class="location">{{ job.location }}</span>
+            {% endif %}
+            <span class="work-type work-type-{{ job.work_type|lower }}">{{ job.get_work_type_display }}</span>
+          </div>
+        </div>
+        
+        <div class="job-details">
+          <p class="job-description">{{ job.description|truncatewords:30 }}</p>
+          
+          <div class="job-info">
+            {% if job.salary_min or job.salary_max %}
+              <span class="salary">{{ job.salary_range_display }}</span>
+            {% endif %}
+            
+            {% if job.visa_sponsorship %}
+              <span class="visa-badge">Visa Sponsorship</span>
+            {% endif %}
+            
+            <span class="posted-date">Posted {{ job.created_at|timesince }} ago</span>
+          </div>
+          
+          {% if job.required_skills.all %}
+            <div class="job-skills">
+              {% for skill in job.required_skills.all|slice:":5" %}
+                <span class="skill-tag">{{ skill.name }}</span>
+              {% endfor %}
+              {% if job.required_skills.count > 5 %}
+                <span class="skill-more">+{{ job.required_skills.count|add:"-5" }} more</span>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  
+  <!-- Pagination -->
+  {% if jobs.has_other_pages %}
+    <div class="pagination-wrapper">
+      <div class="pagination">
+        {% if jobs.has_previous %}
+          <a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.location %}&location={{ request.GET.location }}{% endif %}{% if request.GET.skills %}&skills={{ request.GET.skills }}{% endif %}{% if request.GET.work_type %}&work_type={{ request.GET.work_type }}{% endif %}{% if request.GET.salary_min %}&salary_min={{ request.GET.salary_min }}{% endif %}{% if request.GET.salary_max %}&salary_max={{ request.GET.salary_max }}{% endif %}{% if request.GET.visa_sponsorship %}&visa_sponsorship=on{% endif %}" class="page-link">« First</a>
+          <a href="?page={{ jobs.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.location %}&location={{ request.GET.location }}{% endif %}{% if request.GET.skills %}&skills={{ request.GET.skills }}{% endif %}{% if request.GET.work_type %}&work_type={{ request.GET.work_type }}{% endif %}{% if request.GET.salary_min %}&salary_min={{ request.GET.salary_min }}{% endif %}{% if request.GET.salary_max %}&salary_max={{ request.GET.salary_max }}{% endif %}{% if request.GET.visa_sponsorship %}&visa_sponsorship=on{% endif %}" class="page-link">‹ Previous</a>
+        {% endif %}
+        
+        <span class="page-info">
+          Page {{ jobs.number }} of {{ jobs.paginator.num_pages }}
+        </span>
+        
+        {% if jobs.has_next %}
+          <a href="?page={{ jobs.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.location %}&location={{ request.GET.location }}{% endif %}{% if request.GET.skills %}&skills={{ request.GET.skills }}{% endif %}{% if request.GET.work_type %}&work_type={{ request.GET.work_type }}{% endif %}{% if request.GET.salary_min %}&salary_min={{ request.GET.salary_min }}{% endif %}{% if request.GET.salary_max %}&salary_max={{ request.GET.salary_max }}{% endif %}{% if request.GET.visa_sponsorship %}&visa_sponsorship=on{% endif %}" class="page-link">Next ›</a>
+          <a href="?page={{ jobs.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.location %}&location={{ request.GET.location }}{% endif %}{% if request.GET.skills %}&skills={{ request.GET.skills }}{% endif %}{% if request.GET.work_type %}&work_type={{ request.GET.work_type }}{% endif %}{% if request.GET.salary_min %}&salary_min={{ request.GET.salary_min }}{% endif %}{% if request.GET.salary_max %}&salary_max={{ request.GET.salary_max }}{% endif %}{% if request.GET.visa_sponsorship %}&visa_sponsorship=on{% endif %}" class="page-link">Last »</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+  
+{% else %}
+  <div class="no-results">
+    <div class="no-results-content">
+      <h3>No jobs found</h3>
+      <p>Try adjusting your search criteria or <a href="{% url 'jobs:search' %}">browse all jobs</a>.</p>
+    </div>
+  </div>
+{% endif %}
+
+<style>
+.search-header { margin-bottom: 24px; }
+.search-header h1 { margin-bottom: 8px; }
+.text-muted { color: #6b7280; }
+
+.search-card { margin-bottom: 24px; }
+.search-row { display: grid; grid-template-columns: 2fr 1fr auto; gap: 16px; margin-bottom: 16px; }
+.search-field-main { grid-column: 1; }
+.search-btn { white-space: nowrap; align-self: end; }
+
+.filters-section { margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+.filters-toggle { cursor: pointer; font-weight: 600; color: #000; }
+.filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px; }
+.checkbox-field { display: flex; align-items: center; }
+.checkbox-label { display: flex; align-items: center; gap: 8px; font-weight: normal; }
+
+.active-filters { margin-top: 12px; }
+.clear-filters { color: #dc2626; text-decoration: none; }
+.clear-filters:hover { text-decoration: underline; }
+
+.results-summary { margin-bottom: 16px; color: #6b7280; }
+
+.job-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px; }
+.job-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; transition: box-shadow 0.2s; }
+.job-card:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+
+.job-header h3 { margin: 0 0 8px; }
+.job-header h3 a { color: #000; text-decoration: none; font-size: 1.25rem; }
+.job-header h3 a:hover { color: #2563eb; }
+
+.job-meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+.company { font-weight: 600; color: #374151; }
+.location { color: #6b7280; }
+.work-type { background: #f3f4f6; color: #374151; padding: 4px 8px; border-radius: 6px; font-size: 0.875rem; }
+.work-type-remote { background: #dcfce7; color: #166534; }
+.work-type-hybrid { background: #fef3c7; color: #92400e; }
+
+.job-description { color: #4b5563; margin-bottom: 12px; line-height: 1.5; }
+
+.job-info { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+.salary { color: #059669; font-weight: 600; }
+.visa-badge { background: #dbeafe; color: #1d4ed8; padding: 4px 8px; border-radius: 6px; font-size: 0.875rem; }
+.posted-date { color: #6b7280; font-size: 0.875rem; }
+
+.job-skills { display: flex; flex-wrap: wrap; gap: 6px; }
+.skill-tag { background: #e5e7eb; color: #374151; padding: 4px 8px; border-radius: 6px; font-size: 0.875rem; }
+.skill-more { color: #6b7280; font-size: 0.875rem; }
+
+.pagination-wrapper { display: flex; justify-content: center; }
+.pagination { display: flex; align-items: center; gap: 8px; }
+.page-link { color: #2563eb; text-decoration: none; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; }
+.page-link:hover { background: #f3f4f6; }
+.page-info { padding: 8px 12px; color: #6b7280; }
+
+.no-results { display: flex; justify-content: center; padding: 48px 0; }
+.no-results-content { text-align: center; }
+.no-results h3 { color: #374151; margin-bottom: 8px; }
+
+@media (max-width: 768px) {
+  .search-row { grid-template-columns: 1fr; }
+  .filters-grid { grid-template-columns: 1fr; }
+  .job-meta { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .job-info { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+</style>
+{% endblock %}

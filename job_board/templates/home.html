@@ -3,17 +3,60 @@
 {% block content %}
   <div class="card">
     <h1>Welcome to Job Board</h1>
-    <p>Create a profile with your headline, skills, education, and experience so recruiters can discover you.</p>
+    <p>Find your next opportunity or discover top talent. Join thousands of job seekers and recruiters connecting through our platform.</p>
+    
     {% if user.is_authenticated %}
-      <p style="margin-top:12px;">
-        <a class="btn" href="{% url 'profiles:edit_profile' %}">Edit my profile</a>
-        <a class="btn btn-outline" href="{% url 'profiles:my_profile' %}" style="margin-left:8px;">View profile</a>
-      </p>
+      {% if user.is_recruiter %}
+        <p>As a recruiter, you can post jobs and find the perfect candidates for your team.</p>
+        <p style="margin-top:12px;">
+          <a class="btn" href="{% url 'jobs:post' %}">Post a Job</a>
+          <a class="btn btn-outline" href="{% url 'jobs:my_jobs' %}" style="margin-left:8px;">My Posted Jobs</a>
+        </p>
+      {% else %}
+        <p>Create a profile with your skills and experience so recruiters can discover you, then start applying to jobs.</p>
+        <p style="margin-top:12px;">
+          <a class="btn" href="{% url 'jobs:search' %}">Find Jobs</a>
+          <a class="btn btn-outline" href="{% url 'profiles:edit_profile' %}" style="margin-left:8px;">Edit Profile</a>
+        </p>
+      {% endif %}
     {% else %}
       <p style="margin-top:12px;">
-        <a class="btn" href="{% url 'accounts:signup' %}">Get started</a>
-        <a class="btn btn-outline" href="{% url 'login' %}" style="margin-left:8px;">Log in</a>
+        <a class="btn" href="{% url 'jobs:search' %}">Browse Jobs</a>
+        <a class="btn btn-outline" href="{% url 'accounts:signup' %}" style="margin-left:8px;">Get Started</a>
       </p>
+    {% endif %}
+  </div>
+
+  <!-- Quick Stats or Featured Jobs (optional) -->
+  <div class="home-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 32px;">
+    <div class="stat-card card" style="text-align: center; padding: 24px;">
+      <h3 style="margin: 0 0 8px; color: #2563eb;">Find Jobs</h3>
+      <p style="margin: 0; color: #6b7280;">Search through active job postings</p>
+      <a href="{% url 'jobs:search' %}" class="btn" style="margin-top: 16px; display: inline-flex;">Browse All Jobs</a>
+    </div>
+    
+    {% if not user.is_authenticated or user.is_job_seeker %}
+    <div class="stat-card card" style="text-align: center; padding: 24px;">
+      <h3 style="margin: 0 0 8px; color: #059669;">Build Profile</h3>
+      <p style="margin: 0; color: #6b7280;">Create your professional profile</p>
+      {% if user.is_authenticated %}
+        <a href="{% url 'profiles:edit_profile' %}" class="btn btn-outline" style="margin-top: 16px; display: inline-flex;">Edit Profile</a>
+      {% else %}
+        <a href="{% url 'accounts:signup' %}" class="btn btn-outline" style="margin-top: 16px; display: inline-flex;">Sign Up</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if not user.is_authenticated or user.is_recruiter %}
+    <div class="stat-card card" style="text-align: center; padding: 24px;">
+      <h3 style="margin: 0 0 8px; color: #dc2626;">Post Jobs</h3>
+      <p style="margin: 0; color: #6b7280;">Reach qualified candidates</p>
+      {% if user.is_authenticated and user.is_recruiter %}
+        <a href="{% url 'jobs:post' %}" class="btn btn-outline" style="margin-top: 16px; display: inline-flex;">Post a Job</a>
+      {% else %}
+        <a href="{% url 'accounts:signup' %}" class="btn btn-outline" style="margin-top: 16px; display: inline-flex;">Get Started</a>
+      {% endif %}
+    </div>
     {% endif %}
   </div>
 {% endblock %}
