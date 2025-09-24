@@ -25,4 +25,5 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("profiles/", include(("profiles.urls", "profiles"), namespace="profiles")),
     path("", include("django.contrib.auth.urls")),  # /login, /logout, etc.
+    path("recommended/", include('recommended.urls')),
 ]
