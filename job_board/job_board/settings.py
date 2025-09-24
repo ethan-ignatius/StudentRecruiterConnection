@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'accounts',
     "profiles",
+    "jobs",
 ]
 
 MIDDLEWARE = [
@@ -127,4 +128,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_REDIRECT_URL = "profiles:my_profile"
-LOGOUT_REDIRECT_URL = "login"
+LOGOUT_REDIRECT_URL = "jobs:search" 

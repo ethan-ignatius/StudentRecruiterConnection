@@ -13,9 +13,16 @@
       <a class="brand" href="{% url 'home' %}">Job Board</a>
       <nav class="links">
         <a href="{% url 'home' %}">Home</a>
+        <a href="{% url 'jobs:search' %}">Find Jobs</a>
         {% if user.is_authenticated %}
+          {% if user.is_recruiter %}
+            <a href="{% url 'jobs:post' %}">Post Job</a>
+            <a href="{% url 'jobs:my_jobs' %}">My Jobs</a>
+          {% else %}
+            <a href="{% url 'jobs:my_jobs' %}">My Applications</a>
+          {% endif %}
           <a href="{% url 'profiles:my_profile' %}">My Profile</a>
-          <a href="{% url 'profiles:edit_profile' %}">Edit</a>
+          <a href="{% url 'profiles:edit_profile' %}">Edit Profile</a>
           <form method="post" action="{% url 'logout' %}" style="display:inline;">
             {% csrf_token %}
             <button class="btn btn-outline" type="submit">Logout</button>
