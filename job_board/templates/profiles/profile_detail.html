@@ -4,14 +4,14 @@
   <div class="card">
     <h1>{{ profile.user.get_full_name|default:profile.user.username }}</h1>
 
-    {# Location #}
-    {% if profile.show_location and profile.location %}
-      <p class="field-help">{{ profile.location }}</p>
-    {% endif %}
-
     {# Headline #}
     {% if profile.show_headline and profile.headline %}
       <p style="margin-top:10px;"><strong>{{ profile.headline }}</strong></p>
+    {% endif %}
+
+    {# Location #}
+    {% if profile.show_location and profile.location %}
+      <p class="field-help">{{ profile.location }}</p>
     {% endif %}
 
     {# Summary #}

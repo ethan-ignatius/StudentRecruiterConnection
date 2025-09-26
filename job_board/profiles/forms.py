@@ -52,6 +52,7 @@ class _StartEndDateValidationMixin(forms.ModelForm):
 
 
 class EducationForm(_StartEndDateValidationMixin, forms.ModelForm):
+    show = forms.BooleanField(required=False)
     class Meta:
         model = Education
         fields = ("school", "degree", "field_of_study", "start_date", "end_date", "current", "description", "show")
@@ -125,6 +126,7 @@ class ProfileForm(forms.ModelForm):
 
 class LinkForm(forms.ModelForm):
     """All link fields required."""
+    show = forms.BooleanField(required=False)
     class Meta:
         model = Link
         fields = ("kind", "label", "url", "show")
@@ -132,7 +134,7 @@ class LinkForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for name, field in self.fields.items():
-            if name in {"id", "DELETE"}:
+            if name in {"id", "DELETE", "show"}:
                 continue
             field.required = True
 
