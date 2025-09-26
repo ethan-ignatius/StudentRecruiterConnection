@@ -182,13 +182,13 @@
                     id="{{ xformset.empty_form.show.id_for_label }}"
                     name="{{ xformset.empty_form.show.html_name }}"
                     {% if xformset.empty_form.show.value %}checked{% endif %}
-                    class="visually-hidden">
+                    class="sr-only">
 
               <button type="button"
-                      class="vis-toggle {% if form.show.value %}is-on{% endif %}"
-                      data-for="{{ form.show.id_for_label }}"
-                      aria-pressed="{{ form.show.value|yesno:'true,false' }}"
-                      title="{% if form.show.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
+                      class="vis-toggle {% if xformset.empty_form.show.value %}is-on{% endif %}"
+                      data-for="{{ xformset.empty_form.show.id_for_label }}"
+                      aria-pressed="{{ xformset.empty_form.show.value|yesno:'true,false' }}"
+                      title="{% if xformset.empty_form.show.value %}Make hidden from recruiters{% else %}Make visible to recruiters{% endif %}">
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                   <path d="M12 4C7 4 2.7 7.1 1 12c1.7 4.9 6 8 11 8s9.3-3.1 11-8c-1.7-4.9-6-8-11-8zm0 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
                 </svg>
@@ -440,16 +440,18 @@
 <script>
 (function(){
   document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.vis-toggle').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var input = document.getElementById(btn.dataset.for);
-        if (!input) return;
-        input.checked = !input.checked;                      // flip the hidden checkbox
-        btn.classList.toggle('is-on', input.checked);        // update look
-        btn.setAttribute('aria-pressed', String(input.checked));
-        btn.title = input.checked ? 'Make hidden from recruiters'
-                                  : 'Make visible to recruiters';
-      });
+    // Delegated handler so buttons added later also work
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.vis-toggle');
+      if (!btn) return;
+      var input = document.getElementById(btn.dataset.for);
+      if (!input) return;
+      e.preventDefault();
+      input.checked = !input.checked;                      // flip the hidden checkbox
+      btn.classList.toggle('is-on', input.checked);        // update look
+      btn.setAttribute('aria-pressed', String(input.checked));
+      btn.title = input.checked ? 'Make hidden from recruiters'
+                                : 'Make visible to recruiters';
     });
   });
 

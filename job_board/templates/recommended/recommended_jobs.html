@@ -1,16 +1,51 @@
 {% extends "base.html" %}
 {% block title %}Recommended Jobs{% endblock %}
 {% block content %}
+<h1>{{ profile.user.get_full_name|default:profile.user.username }}’s Recommended Jobs</h1>
+<p>Based on your skills:</p>
+<ul class="skills-list">
+  {% for skill in skills %}
+    <li class="skill-tag">{{ skill.name }}</li>
+  {% empty %}
+    <li>No skills added.</li>
+  {% endfor %}
+</ul>
 
+<hr>
 
-<h1>{{ profile.user.get_full_name|default:profile.user.username }}'s Recommended Jobs</h1>
-<p>View a list of recommended jobs based on your skills.</p>
-<h2>Your skills:</h2>
-    <ul class="skills-list">
-        {% for skill in skills %}
-            <li class="skill-tag">{{ skill.name }}</li>
-        {% empty %}
-            <li>No skills added.</li>
-        {% endfor %}
-    </ul>
+{% if recommendations %}
+  <ul class="job-list">
+    {% for item in recommendations %}
+      {% with job=item.job %}
+      <li class="job-card">
+        <h3><a href="{{ job.get_absolute_url|default:'#' }}">{{ job.title }}</a></h3>
+        <p><strong>{{ job.company }}</strong> — {{ job.location }} • {{ job.get_work_type_display }}</p>
+        
+        {% if item.matched_required or item.matched_nice %}
+        <p>
+            <em>Matched:</em>
+            {% if item.matched_required %}{{ item.matched_required|length }} required{% endif %}
+            {% if item.matched_required and item.matched_nice %} • {% endif %}
+            {% if item.matched_nice %}{{ item.matched_nice|length }} nice-to-have{% endif %}
+        </p>
+        {% endif %}
+
+        {% if item.matched_required %}
+          <p><em>Matched required:</em>
+            {% for s in item.matched_required %}<span class="skill-tag">{{ s.name }}</span>{% if not forloop.last %} {% endif %}{% endfor %}
+          </p>
+        {% endif %}
+
+        {% if item.matched_nice %}
+          <p><em>Matched nice-to-have:</em>
+            {% for s in item.matched_nice %}<span class="skill-tag">{{ s.name }}</span>{% if not forloop.last %} {% endif %}{% endfor %}
+          </p>
+        {% endif %}
+      </li>
+      {% endwith %}
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No matching jobs yet. Add more skills to your profile or check back later.</p>
+{% endif %}
 {% endblock %}

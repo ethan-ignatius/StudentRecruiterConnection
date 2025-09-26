@@ -1,0 +1,219 @@
+[
+  {
+    "model": "accounts.user",
+    "pk": 1,
+    "fields": {
+      "username": "recruiter1",
+      "email": "recruiter1@example.com",
+      "password": "pbkdf2_sha256$720000$8wvfKuWuKOdh$lajxiDB6YlhFpOuSiClgOHUNS0vCQw6pw+W4ZMBgYFU=",
+      "is_active": true,
+      "is_staff": true,
+      "is_superuser": false,
+      "account_type": "RECRUITER"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 2,
+    "fields": {
+      "username": "seeker1",
+      "email": "seeker1@example.com",
+      "password": "pbkdf2_sha256$720000$8wvfKuWuKOdh$lajxiDB6YlhFpOuSiClgOHUNS0vCQw6pw+W4ZMBgYFU=",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false,
+      "account_type": "JOB_SEEKER"
+    }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 1,
+    "fields": { "name": "Python" }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 2,
+    "fields": { "name": "Django" }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 3,
+    "fields": { "name": "React" }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 4,
+    "fields": { "name": "SQL" }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 5,
+    "fields": { "name": "AWS" }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 6,
+    "fields": { "name": "Docker" }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 7,
+    "fields": { "name": "Figma" }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 8,
+    "fields": { "name": "Tableau" }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 9,
+    "fields": { "name": "Kubernetes" }
+  },
+  {
+    "model": "profiles.skill",
+    "pk": 10,
+    "fields": { "name": "Customer Success" }
+  },
+  {
+    "model": "profiles.jobseekerprofile",
+    "pk": 1,
+    "fields": {
+      "user": 2,
+      "headline": "Entry-level Developer & Analyst",
+      "summary": "Curious builder with a knack for data and web apps.",
+      "location": "Remote",
+      "show_headline": true,
+      "show_location": true,
+      "show_summary": true,
+      "skills": [1, 3, 4, 6],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 1,
+    "fields": {
+      "title": "Junior Full-Stack Developer",
+      "company": "Acme Corp",
+      "location": "New York, NY",
+      "work_type": "ON_SITE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Help build and ship features across the stack.",
+      "requirements": "Some experience with Python or JS frameworks.",
+      "salary_min": 60000,
+      "salary_max": 90000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 1,
+      "status": "ACTIVE",
+      "required_skills": [1, 2, 3, 4],
+      "nice_to_have_skills": [6, 5],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 2,
+    "fields": {
+      "title": "Data Analyst (Entry Level)",
+      "company": "Bluebird Analytics",
+      "location": "Remote",
+      "work_type": "REMOTE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Analyze datasets, build dashboards, and present findings.",
+      "requirements": "Comfort with SQL and BI tools.",
+      "salary_min": 65000,
+      "salary_max": 97000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 1,
+      "status": "ACTIVE",
+      "required_skills": [4, 8],
+      "nice_to_have_skills": [1, 3],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 3,
+    "fields": {
+      "title": "Product Designer",
+      "company": "Northstar Labs",
+      "location": "Austin, TX",
+      "work_type": "ON_SITE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Own UX flows and craft polished UIs.",
+      "requirements": "Portfolio demonstrating end-to-end product design.",
+      "salary_min": 70000,
+      "salary_max": 104000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 1,
+      "status": "ACTIVE",
+      "required_skills": [7],
+      "nice_to_have_skills": [3],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 4,
+    "fields": {
+      "title": "DevOps Engineer",
+      "company": "Nimbus Cloud",
+      "location": "Seattle, WA",
+      "work_type": "HYBRID",
+      "latitude": null,
+      "longitude": null,
+      "description": "Automate infra, CI/CD, and observability.",
+      "requirements": "Containerization and cloud experience.",
+      "salary_min": 75000,
+      "salary_max": 111000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 1,
+      "status": "ACTIVE",
+      "required_skills": [6, 9, 5],
+      "nice_to_have_skills": [1, 4],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 5,
+    "fields": {
+      "title": "Customer Success Manager",
+      "company": "BrightPath",
+      "location": "Chicago, IL",
+      "work_type": "ON_SITE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Partner with customers to drive adoption and outcomes.",
+      "requirements": "Excellent communication and stakeholder management.",
+      "salary_min": 80000,
+      "salary_max": 118000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 1,
+      "status": "ACTIVE",
+      "required_skills": [10],
+      "nice_to_have_skills": [8, 3],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  }
+]
