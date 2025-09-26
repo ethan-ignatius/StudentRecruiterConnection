@@ -1,0 +1,134 @@
+[
+  {
+    "model": "jobs.job",
+    "pk": 1,
+    "fields": {
+      "title": "Senior Full Stack Developer",
+      "company": "TechFlow Solutions",
+      "location": "San Francisco, CA",
+      "work_type": "HYBRID",
+      "description": "We're looking for an experienced Full Stack Developer to join our innovative team building next-generation fintech applications. You'll work on both frontend React applications and backend Python services, collaborating with product managers, designers, and other engineers to deliver high-quality software solutions.\n\nThis is a great opportunity to work with cutting-edge technologies while solving real-world financial challenges for millions of users. Our engineering culture emphasizes continuous learning, code quality, and work-life balance.",
+      "requirements": "• 5+ years of experience in full stack development\n• Strong proficiency in React, TypeScript, and modern JavaScript\n• Expert-level Python skills with Django or Flask\n• Experience with PostgreSQL and Redis\n• Familiarity with AWS services (EC2, S3, RDS)\n• Understanding of microservices architecture\n• Experience with API design and RESTful services\n• Strong problem-solving skills and attention to detail\n• Excellent communication and teamwork abilities",
+      "salary_min": 140000,
+      "salary_max": 180000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "• Comprehensive health, dental, and vision insurance\n• $5,000 annual learning and development budget\n• Flexible PTO and sabbatical options\n• Remote work stipend for home office setup\n• Stock options with high growth potential\n• Free lunch and snacks in office\n• Gym membership reimbursement",
+      "posted_by": 2,
+      "status": "ACTIVE",
+      "created_at": "2025-01-15T10:30:00Z",
+      "updated_at": "2025-01-15T10:30:00Z",
+      "expires_at": "2025-03-15T23:59:59Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 2,
+    "fields": {
+      "title": "Product Marketing Manager",
+      "company": "GreenTech Innovations",
+      "location": "Austin, TX",
+      "work_type": "ON_SITE",
+      "description": "Join our mission to accelerate the world's transition to sustainable energy! We're seeking a dynamic Product Marketing Manager to drive go-to-market strategies for our revolutionary solar panel technology.\n\nYou'll collaborate closely with engineering, sales, and executive teams to position our products in the competitive clean energy market. This role offers the opportunity to make a real environmental impact while advancing your marketing career.",
+      "requirements": "• 3-5 years of product marketing experience, preferably in tech or clean energy\n• Proven track record of successful product launches\n• Strong analytical skills and data-driven decision making\n• Experience with marketing automation tools (HubSpot, Marketo)\n• Excellent written and verbal communication skills\n• Bachelor's degree in Marketing, Business, or related field\n• Understanding of B2B sales processes\n• Passion for sustainability and environmental issues",
+      "salary_min": 85000,
+      "salary_max": 110000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "• Full health insurance coverage\n• 4 weeks PTO + holidays\n• Professional development opportunities\n• Electric vehicle charging stations\n• Quarterly team building events\n• Performance-based bonuses\n• 401(k) with company matching",
+      "posted_by": 3,
+      "status": "ACTIVE",
+      "created_at": "2025-01-14T14:20:00Z",
+      "updated_at": "2025-01-14T14:20:00Z",
+      "expires_at": "2025-02-28T23:59:59Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 3,
+    "fields": {
+      "title": "UX/UI Designer",
+      "company": "DesignStudio Pro",
+      "location": "Remote",
+      "work_type": "REMOTE",
+      "description": "We're a fast-growing design agency looking for a talented UX/UI Designer to create beautiful, user-centered digital experiences for our diverse client base. You'll work on everything from mobile apps to enterprise software, with opportunities to shape design processes and mentor junior designers.\n\nOur collaborative remote culture values creativity, innovation, and continuous improvement. You'll have the freedom to work from anywhere while being part of a tight-knit team of design professionals.",
+      "requirements": "• 2-4 years of UX/UI design experience\n• Proficiency in Figma, Sketch, and Adobe Creative Suite\n• Strong portfolio demonstrating user-centered design process\n• Experience with prototyping and user testing\n• Understanding of responsive design principles\n• Knowledge of HTML/CSS is a plus\n• Strong presentation and communication skills\n• Self-motivated and able to work independently\n• Bachelor's degree in Design, HCI, or equivalent experience",
+      "salary_min": 70000,
+      "salary_max": 95000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "• 100% remote work flexibility\n• Top-tier equipment and software licenses\n• Health insurance with HSA contribution\n• Unlimited PTO policy\n• Annual design conference attendance\n• Monthly design book/course allowance\n• Virtual team events and coffee chats",
+      "posted_by": 4,
+      "status": "ACTIVE",
+      "created_at": "2025-01-13T09:45:00Z",
+      "updated_at": "2025-01-13T09:45:00Z",
+      "expires_at": "2025-02-12T23:59:59Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 4,
+    "fields": {
+      "title": "Data Scientist - Machine Learning",
+      "company": "AI Research Labs",
+      "location": "Boston, MA",
+      "work_type": "HYBRID",
+      "description": "Join our world-class research team developing cutting-edge machine learning solutions for healthcare applications. You'll work on projects that directly impact patient outcomes, from diagnostic imaging algorithms to drug discovery pipelines.\n\nThis role offers the unique opportunity to bridge academic research and real-world applications, with access to large-scale datasets and state-of-the-art computing resources.",
+      "requirements": "• PhD or Master's in Computer Science, Statistics, or related field\n• 3+ years of experience in machine learning and data science\n• Strong programming skills in Python (NumPy, Pandas, Scikit-learn)\n• Experience with deep learning frameworks (TensorFlow, PyTorch)\n• Knowledge of statistical modeling and experimental design\n• Experience with cloud platforms (AWS, GCP, Azure)\n• Publications in top-tier conferences/journals preferred\n• Strong mathematical background in linear algebra and statistics",
+      "salary_min": 130000,
+      "salary_max": 170000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "• Competitive salary with equity participation\n• Premium health insurance\n• Research publication support\n• Conference attendance funding\n• Flexible work arrangements\n• Access to cutting-edge computing resources\n• Collaboration with leading academic institutions",
+      "posted_by": 5,
+      "status": "ACTIVE",
+      "created_at": "2025-01-12T16:15:00Z",
+      "updated_at": "2025-01-12T16:15:00Z",
+      "expires_at": "2025-03-01T23:59:59Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 5,
+    "fields": {
+      "title": "Junior Frontend Developer",
+      "company": "StartupVentures Inc",
+      "location": "Denver, CO",
+      "work_type": "ON_SITE",
+      "description": "Perfect opportunity for a recent graduate or career changer to jump into web development! We're looking for an enthusiastic Junior Frontend Developer to join our growing team building consumer-facing web applications.\n\nYou'll work closely with senior developers, learning modern development practices while contributing to real products used by thousands of users. We offer excellent mentorship and growth opportunities in a supportive environment.",
+      "requirements": "• 1-2 years of experience or strong bootcamp/self-taught background\n• Proficiency in HTML, CSS, and JavaScript\n• Basic React experience or willingness to learn quickly\n• Understanding of responsive web design\n• Familiarity with Git and version control\n• Problem-solving mindset and eagerness to learn\n• Strong communication skills\n• Portfolio demonstrating coding abilities",
+      "salary_min": 55000,
+      "salary_max": 70000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "• Health and dental insurance\n• Mentorship from senior developers\n• Learning stipend for courses and books\n• Flexible hours and casual dress code\n• Company laptop and equipment\n• Team lunch every Friday\n• Growth opportunities within the company",
+      "posted_by": 6,
+      "status": "ACTIVE",
+      "created_at": "2025-01-11T11:30:00Z",
+      "updated_at": "2025-01-11T11:30:00Z",
+      "expires_at": "2025-02-25T23:59:59Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 6,
+    "fields": {
+      "title": "DevOps Engineer",
+      "company": "CloudScale Systems",
+      "location": "Seattle, WA",
+      "work_type": "REMOTE",
+      "description": "We're seeking a skilled DevOps Engineer to help scale our infrastructure and improve our deployment processes. You'll work with containerization, orchestration, and cloud infrastructure to support our rapidly growing SaaS platform.\n\nThis is a high-impact role where you'll design and implement systems that directly enable our engineering teams to deliver features faster and more reliably.",
+      "requirements": "• 3-5 years of DevOps or infrastructure experience\n• Strong experience with Docker and Kubernetes\n• Proficiency with AWS services (EC2, ECS, Lambda, etc.)\n• Infrastructure as Code experience (Terraform, CloudFormation)\n• CI/CD pipeline design and implementation\n• Monitoring and logging tools (Prometheus, ELK stack)\n• Scripting skills in Python, Bash, or Go\n• Experience with database administration (PostgreSQL, Redis)",
+      "salary_min": 110000,
+      "salary_max": 140000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "• Fully remote work with flexible hours\n• Top-tier health insurance\n• $3,000 home office setup budget\n• Professional development budget\n• Stock options\n• Annual team retreat\n• Latest MacBook Pro and equipment",
+      "posted_by": 7,
+      "status": "ACTIVE",
+      "created_at": "2025-01-10T13:45:00Z",
+      "updated_at": "2025-01-10T13:45:00Z",
+      "expires_at": "2025-03-10T23:59:59Z"
+    }
+  }
+]
