@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Recommended Jobs{% endblock %}
+{% block content %}
+
+
+<h1>{{ profile.user.get_full_name|default:profile.user.username }}'s Recommended Jobs</h1>
+<p>View a list of recommended jobs based on your skills.</p>
+<h2>Your skills:</h2>
+    <ul class="skills-list">
+        {% for skill in skills %}
+            <li class="skill-tag">{{ skill.name }}</li>
+        {% empty %}
+            <li>No skills added.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}
