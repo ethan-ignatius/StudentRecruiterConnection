@@ -136,6 +136,63 @@
     {% endfor %}
   </div>
   
+<!-- Map container -->
+<div id="jobs-map" style="height:420px;border-radius:12px;margin:14px 0;"></div>
+
+<!-- Safely embed the data -->
+{{ jobs_for_map|json_script:"jobs-data" }}
+
+<!-- Leaflet assets (CSS first, then JS) -->
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+<!-- Your map code must be in a separate script tag (not the same tag as Leaflet src) -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // 1) Read the jobs array
+  const el = document.getElementById('jobs-data');
+  if (!el) { console.error('jobs-data element not found'); return; }
+  const jobs = JSON.parse(el.textContent || '[]');
+
+  console.log('jobs_for_map count:', jobs.length);
+  if (!jobs.length) console.warn('No jobs with coords were passed to the template.');
+
+  // 2) Init map
+  const mapDiv = document.getElementById('jobs-map');
+  if (!mapDiv) { console.error('#jobs-map not found'); return; }
+
+  const map = L.map('jobs-map').setView([39.8283, -98.5795], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  // 3) Plot markers
+  const markers = L.layerGroup().addTo(map);
+  const bounds = L.latLngBounds();
+  let placed = 0;
+
+  jobs.forEach(j => {
+    if (j.latitude == null || j.longitude == null) return;
+    const m = L.marker([j.latitude, j.longitude]).addTo(markers);
+    m.bindPopup(`<strong>${j.title}</strong> — ${j.company}<br>${j.location}`);
+    bounds.extend([j.latitude, j.longitude]);
+    placed++;
+  });
+
+  if (placed && bounds.isValid()) {
+    map.fitBounds(bounds, { padding: [20,20] });
+  } else {
+    console.warn('No markers placed (check jobs_for_map content).');
+  }
+});
+</script>
+
   <!-- Pagination -->
   {% if jobs.has_other_pages %}
     <div class="pagination-wrapper">

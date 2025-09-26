@@ -11,15 +11,27 @@ from .forms import ProfileForm, EducationFormSet, ExperienceFormSet, LinkFormSet
 @login_required
 def my_profile(request):
     profile, _ = JobSeekerProfile.objects.get_or_create(user=request.user)
-    return render(request, "profiles/profile_detail.html", {"profile": profile})
+    ctx = {
+        "profile": profile,
+        "experiences_qs": profile.experiences.filter(show=True),
+        "educations_qs": profile.educations.filter(show=True),
+        "links_qs": profile.links.filter(show=True),
+    }
+    return render(request, "profiles/profile_detail.html", ctx)
 
 
 def public_profile(request, username: str):
     user = get_object_or_404(User, username=username)
     if not hasattr(user, "profile"):
         return render(request, "profiles/no_profile.html", {"target": user})
-    return render(request, "profiles/profile_detail.html", {"profile": user.profile})
-
+    profile = user.profile
+    ctx = {
+        "profile": profile,
+        "experiences_qs": profile.experiences.filter(show=True),
+        "educations_qs": profile.educations.filter(show=True),
+        "links_qs": profile.links.filter(show=True),
+    }
+    return render(request, "profiles/profile_detail.html", ctx)
 
 @login_required
 def edit_profile(request):

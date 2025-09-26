@@ -34,7 +34,7 @@ class Education(models.Model):
     end_date = models.DateField(null=True, blank=True)
     current = models.BooleanField(default=False)
     description = models.TextField(blank=True)
-    show = models.BooleanField(default=True, blank=True)
+    show = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["-current", "-end_date", "-start_date"]
@@ -47,7 +47,7 @@ class Experience(models.Model):
     end_date = models.DateField(null=True, blank=True)
     current = models.BooleanField(default=False)
     description = models.TextField(blank=True)
-    show = models.BooleanField(default=True, blank=True)
+    show = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["-current", "-end_date", "-start_date"]
@@ -64,6 +64,6 @@ class Link(models.Model):
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.WEBSITE)
     label = models.CharField(max_length=60, blank=True)
     url = models.URLField()
-    show = models.BooleanField(default=True, blank=True)
+    show = models.BooleanField(default=True)
 
 JobSeekerProfile.add_to_class("skills", models.ManyToManyField(Skill, blank=True))

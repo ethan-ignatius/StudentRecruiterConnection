@@ -23,6 +23,8 @@ class Job(models.Model):
     company = models.CharField(max_length=200)
     location = models.CharField(max_length=200, blank=True, help_text="City, State or 'Remote'")
     work_type = models.CharField(max_length=20, choices=WorkType.choices, default=WorkType.ON_SITE)
+    latitude  = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     
     # Job details
     description = models.TextField()
@@ -62,6 +64,47 @@ class Job(models.Model):
 
     def get_absolute_url(self):
         return reverse("jobs:detail", kwargs={"pk": self.pk})
+    
+    def save(self, *args, **kwargs):
+        # Normalize location
+        loc = (self.location or "").strip()
+
+        # If Remote or blank: clear coords
+        if not loc or loc.lower().startswith("remote"):
+            self.latitude = None
+            self.longitude = None
+        else:
+            # Decide if we must (re)geocode:
+            need = False
+            # 1) New object OR coords missing
+            if self.pk is None or self.latitude is None or self.longitude is None:
+                need = True
+            else:
+                # 2) Location text changed since last save
+                try:
+                    old = type(self).objects.get(pk=self.pk)
+                except type(self).DoesNotExist:
+                    old = None
+                if old and (old.location or "").strip() != loc:
+                    need = True
+
+            if need:
+                try:
+                    from .geocoding import geocode_city_state
+                    parts = [p.strip() for p in loc.split(",")]
+                    if len(parts) >= 2:
+                        res = geocode_city_state(parts[0], parts[1])
+                        if res:
+                            self.latitude, self.longitude = res
+                        else:
+                            # If lookup fails, clear to avoid stale/wrong pins
+                            self.latitude = None
+                            self.longitude = None
+                except Exception:
+                    # Don’t break the save on geocode hiccups
+                    pass
+
+        super().save(*args, **kwargs)
 
     @property
     def is_active(self):
@@ -79,6 +122,10 @@ class Job(models.Model):
         elif self.salary_max:
             return f"Up to ${self.salary_max:,}"
         return "Salary not specified"
+    
+    @property
+    def has_coords(self) -> bool:
+        return self.latitude is not None and self.longitude is not None
 
 
 class JobApplication(models.Model):
@@ -156,3 +203,12 @@ class ApplicationStatusChange(models.Model):
     
     def __str__(self):
         return f"{self.application} - {self.old_status} to {self.new_status}"
+
+class CityCoord(models.Model):
+    city  = models.CharField(max_length=120)
+    state = models.CharField(max_length=120)
+    lat   = models.FloatField()
+    lng   = models.FloatField()
+
+    class Meta:
+        unique_together = ("city", "state")

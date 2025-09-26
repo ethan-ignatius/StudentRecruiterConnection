@@ -1,0 +1,61 @@
+# --- Python bytecode / cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Django (local artifacts) ---
+# Local SQLite DB (dev only)
+db.sqlite3
+*.sqlite3
+db.sqlite3-journal
+
+# Uploaded media (keep out of git)
+media/
+
+# Collected static files (NOT your source static/)
+# Set this to your STATIC_ROOT if different
+staticfiles/
+static_root/
+
+# Logs
+*.log
+
+# Local overrides / secrets
+.env
+.env.*
+!.env.example
+settings_local.py
+
+# --- Test / tooling caches ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.pytype/
+.ruff_cache/
+.dmypy.json
+.pyre/
+
+# --- Build / packaging ---
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# --- Editors / OS junk ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.orig
+.DS_Store
+Thumbs.db

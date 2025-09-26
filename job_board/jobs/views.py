@@ -9,9 +9,10 @@ from django.db import transaction
 
 from accounts.models import User
 from profiles.models import Skill
+from django.urls import reverse
+from django.conf import settings
 from .models import Job, JobApplication, ApplicationStatusChange
 from .forms import JobSearchForm, JobForm, JobApplicationForm, QuickApplicationForm, ApplicationStatusForm
-
 
 def job_search(request):
     """Job search view with filtering."""
@@ -70,14 +71,30 @@ def job_search(request):
     paginator = Paginator(jobs, 10)  # Show 10 jobs per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
+    map_queryset = jobs
+
+    jobs_for_map = [
+    {
+        "id": j.id,
+        "title": j.title,
+        "company": j.company,
+        "location": j.location or "",
+        "url": reverse("jobs:detail", args=[j.id]),
+        "latitude": j.latitude,
+        "longitude": j.longitude,
+    }
+    for j in map_queryset
+    if j.latitude is not None and j.longitude is not None
+]
     
     context = {
         'form': form,
         'jobs': page_obj,
         'total_count': paginator.count,
-        'has_filters': any(request.GET.values())
+        'has_filters': any(request.GET.values()),
+        "jobs_for_map": jobs_for_map,
     }
-    
     return render(request, 'jobs/job_search.html', context)
 
 
