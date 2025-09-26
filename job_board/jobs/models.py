@@ -83,23 +83,76 @@ class Job(models.Model):
 
 class JobApplication(models.Model):
     class Status(models.TextChoices):
-        PENDING = "PENDING", "Pending"
+        APPLIED = "APPLIED", "Applied"
         REVIEWING = "REVIEWING", "Under Review"
-        INTERVIEWED = "INTERVIEWED", "Interviewed"
-        ACCEPTED = "ACCEPTED", "Accepted"
-        REJECTED = "REJECTED", "Rejected"
+        INTERVIEW = "INTERVIEW", "Interview"
+        OFFER = "OFFER", "Offer Extended"
+        ACCEPTED = "ACCEPTED", "Offer Accepted"
+        REJECTED = "REJECTED", "Not Selected"
         WITHDRAWN = "WITHDRAWN", "Withdrawn"
 
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="applications")
     applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="job_applications")
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    cover_letter = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.APPLIED)
+    cover_letter = models.TextField(blank=True, help_text="Optional personalized message")
     applied_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
+    # Status tracking fields
+    status_notes = models.TextField(blank=True, help_text="Internal notes about status changes")
+    last_status_change = models.DateTimeField(auto_now=True)
+    
     class Meta:
         unique_together = ["job", "applicant"]
         ordering = ["-applied_at"]
+        indexes = [
+            models.Index(fields=["applicant", "status"]),
+            models.Index(fields=["job", "status"]),
+            models.Index(fields=["status", "updated_at"]),
+        ]
 
     def __str__(self):
         return f"{self.applicant.username} -> {self.job.title}"
+    
+    @property
+    def status_display_class(self):
+        """Return CSS class for status display"""
+        status_classes = {
+            self.Status.APPLIED: "status-applied",
+            self.Status.REVIEWING: "status-reviewing", 
+            self.Status.INTERVIEW: "status-interview",
+            self.Status.OFFER: "status-offer",
+            self.Status.ACCEPTED: "status-accepted",
+            self.Status.REJECTED: "status-rejected",
+            self.Status.WITHDRAWN: "status-withdrawn",
+        }
+        return status_classes.get(self.status, "status-default")
+    
+    def get_status_progress(self):
+        """Return progress percentage for status display"""
+        progress_map = {
+            self.Status.APPLIED: 20,
+            self.Status.REVIEWING: 40,
+            self.Status.INTERVIEW: 60,
+            self.Status.OFFER: 80,
+            self.Status.ACCEPTED: 100,
+            self.Status.REJECTED: 0,
+            self.Status.WITHDRAWN: 0,
+        }
+        return progress_map.get(self.status, 0)
+
+
+class ApplicationStatusChange(models.Model):
+    """Track status change history for applications"""
+    application = models.ForeignKey(JobApplication, on_delete=models.CASCADE, related_name="status_changes")
+    old_status = models.CharField(max_length=20, choices=JobApplication.Status.choices)
+    new_status = models.CharField(max_length=20, choices=JobApplication.Status.choices)
+    changed_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="status_changes_made")
+    changed_at = models.DateTimeField(default=timezone.now)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ["-changed_at"]
+    
+    def __str__(self):
+        return f"{self.application} - {self.old_status} to {self.new_status}"

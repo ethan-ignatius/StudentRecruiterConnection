@@ -181,17 +181,97 @@ class JobForm(forms.ModelForm):
         return job
 
 
+class QuickApplicationForm(forms.Form):
+    """Form for one-click application with optional tailored note"""
+    tailored_note = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'Add a personalized note to make your application stand out... (optional)',
+            'class': 'quick-note-input',
+            'maxlength': 500
+        }),
+        label="Personal Note",
+        help_text="Optional: Briefly explain why you're interested in this role (max 500 characters)",
+        max_length=500
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        self.job = kwargs.pop('job', None)
+        super().__init__(*args, **kwargs)
+        
+        # Pre-populate with suggested content if user has profile
+        if self.user and hasattr(self.user, 'profile') and self.job:
+            profile = self.user.profile
+            if profile.headline or profile.skills.exists():
+                suggestion = self.generate_suggestion(profile, self.job)
+                self.fields['tailored_note'].widget.attrs['placeholder'] = suggestion
+    
+    def generate_suggestion(self, profile, job):
+        """Generate a suggested note based on user profile and job"""
+        suggestions = []
+        
+        # Match skills
+        user_skills = set(skill.name.lower() for skill in profile.skills.all())
+        job_skills = set(skill.name.lower() for skill in job.required_skills.all()) | \
+                    set(skill.name.lower() for skill in job.nice_to_have_skills.all())
+        
+        matching_skills = user_skills & job_skills
+        if matching_skills:
+            skill_list = ', '.join(list(matching_skills)[:3])  # First 3 matches
+            suggestions.append(f"I have experience with {skill_list}")
+        
+        # Add headline if available
+        if profile.headline:
+            suggestions.append(f"As a {profile.headline.lower()}, I'm excited about this opportunity")
+        
+        if suggestions:
+            return f"Example: {'. '.join(suggestions[:2])}..."
+        
+        return "Add a personalized note to make your application stand out... (optional)"
+
+
 class JobApplicationForm(forms.ModelForm):
+    """Full application form for detailed applications"""
     class Meta:
         model = JobApplication
         fields = ['cover_letter']
         widgets = {
             'cover_letter': forms.Textarea(attrs={
-                'rows': 6,
-                'placeholder': 'Tell the employer why you\'re interested in this position and why you\'d be a great fit...'
+                'rows': 8,
+                'placeholder': 'Write a detailed cover letter explaining why you\'re interested in this position and why you\'d be a great fit...'
             })
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['cover_letter'].required = False
+        self.fields['cover_letter'].label = "Cover Letter"
+        self.fields['cover_letter'].help_text = "Tell the employer about your interest and qualifications"
+
+
+class ApplicationStatusForm(forms.ModelForm):
+    """Form for recruiters to update application status"""
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'Add notes about this status change...'
+        }),
+        label="Notes",
+        help_text="Optional notes about the status change"
+    )
+    
+    class Meta:
+        model = JobApplication
+        fields = ['status']
+        widgets = {
+            'status': forms.Select(attrs={
+                'class': 'status-select'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].label = "Application Status"

@@ -17,12 +17,34 @@
       </div>
       
       <div class="job-actions">
-        {% if can_apply %}
-          <a href="{% url 'jobs:apply' job.pk %}" class="btn btn-primary">Apply Now</a>
-        {% elif user_applied %}
+        {% if user_applied %}
           <div class="applied-status">
-            <span class="applied-badge">Applied</span>
-            <p class="applied-text">You applied {{ user_application.applied_at|timesince }} ago</p>
+            <div class="status-badge status-{{ user_application.status_display_class }}">
+              {{ user_application.get_status_display }}
+            </div>
+            <p class="applied-text">Applied {{ user_application.applied_at|date:"M j, Y" }}</p>
+            <a href="{% url 'jobs:application_detail' user_application.pk %}" class="btn btn-outline" style="margin-top: 8px; font-size: 0.9rem;">Track Status</a>
+          </div>
+        {% elif can_apply %}
+          <div id="quick-apply-section">
+            <button type="button" id="quick-apply-btn" class="btn btn-primary">Quick Apply</button>
+            <div id="quick-apply-form" style="display: none; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 12px; min-width: 320px;">
+              <form id="quick-apply-ajax-form">
+                {% csrf_token %}
+                <div class="field">
+                  {{ quick_form.tailored_note.label_tag }}
+                  {{ quick_form.tailored_note }}
+                  <div class="field-help">{{ quick_form.tailored_note.help_text }}</div>
+                </div>
+                <div style="margin-top: 12px; display: flex; gap: 8px;">
+                  <button type="submit" class="btn btn-primary" style="flex: 1;">Apply Now</button>
+                  <button type="button" id="cancel-quick-apply" class="btn btn-outline">Cancel</button>
+                </div>
+              </form>
+            </div>
+            <div style="margin-top: 8px;">
+              <a href="{% url 'jobs:apply' job.pk %}" class="btn btn-outline" style="font-size: 0.9rem;">Full Application</a>
+            </div>
           </div>
         {% elif not user.is_authenticated %}
           <a href="{% url 'login' %}" class="btn btn-primary">Login to Apply</a>
@@ -196,15 +218,21 @@
   text-align: center; 
 }
 
-.applied-badge { 
-  background: #10b981; 
-  color: white; 
-  padding: 8px 16px; 
-  border-radius: 6px; 
-  font-weight: 600; 
+.status-badge { 
   display: inline-block;
+  padding: 8px 16px; 
+  border-radius: 20px; 
+  font-weight: 600; 
   margin-bottom: 8px;
+  text-align: center;
 }
+.status-applied { background: #dbeafe; color: #1e40af; }
+.status-reviewing { background: #fef3c7; color: #92400e; }
+.status-interview { background: #e0e7ff; color: #3730a3; }
+.status-offer { background: #d1fae5; color: #065f46; }
+.status-accepted { background: #dcfce7; color: #166534; }
+.status-rejected { background: #fee2e2; color: #991b1b; }
+.status-withdrawn { background: #f3f4f6; color: #374151; }
 
 .applied-text { 
   color: #6b7280; 
@@ -363,6 +391,12 @@
   font-weight: 600;
 }
 
+#quick-apply-form textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 80px;
+}
+
 @media (max-width: 768px) {
   .job-header-content { 
     flex-direction: column; 
@@ -401,4 +435,77 @@
   }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const quickApplyBtn = document.getElementById('quick-apply-btn');
+  const quickApplyForm = document.getElementById('quick-apply-form');
+  const cancelBtn = document.getElementById('cancel-quick-apply');
+  const ajaxForm = document.getElementById('quick-apply-ajax-form');
+
+  if (quickApplyBtn) {
+    quickApplyBtn.addEventListener('click', function() {
+      quickApplyForm.style.display = quickApplyForm.style.display === 'none' ? 'block' : 'none';
+      if (quickApplyForm.style.display === 'block') {
+        quickApplyForm.querySelector('textarea').focus();
+      }
+    });
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', function() {
+      quickApplyForm.style.display = 'none';
+    });
+  }
+
+  if (ajaxForm) {
+    ajaxForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(ajaxForm);
+      const submitBtn = ajaxForm.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Applying...';
+      
+      fetch('{% url "jobs:quick_apply" job.pk %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Show success message
+          const successDiv = document.createElement('div');
+          successDiv.className = 'flash success';
+          successDiv.style.marginBottom = '16px';
+          successDiv.innerHTML = '<strong>Success!</strong> ' + data.message;
+          
+          document.querySelector('.job-header-card').insertBefore(successDiv, document.querySelector('.job-header-card').firstChild);
+          
+          // Hide quick apply section and reload page after delay
+          document.getElementById('quick-apply-section').style.display = 'none';
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert('Error: ' + data.error);
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      });
+    });
+  }
+});
+</script>
 {% endblock %}
