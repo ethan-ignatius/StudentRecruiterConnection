@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}My Applications{% endblock %}
+
+{% block content %}
+<div class="applications-container">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1>My Job Applications</h1>
+      <p class="page-description">Track your job applications and their current status.</p>
+    </div>
+    <a href="{% url 'jobs:search' %}" class="btn">Find More Jobs</a>
+  </div>
+
+  {% if applications %}
+    <!-- Quick Stats -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 32px;">
+      {% for status, apps in status_groups.items %}
+        <div class="stat-card card" style="text-align: center; padding: 16px; background: #f8fafc;">
+          <div style="font-size: 1.75rem; font-weight: 600; color: #2563eb; margin-bottom: 4px;">{{ apps|length }}</div>
+          <div style="font-size: 0.9rem; color: #6b7280; font-weight: 500;">{{ status }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Applications List -->
+    <div class="applications-list">
+      {% for application in applications %}
+        <div class="application-card card" style="margin-bottom: 16px; position: relative;">
+          <!-- Status indicator bar on left -->
+          <div class="status-indicator status-{{ application.status_display_class }}" style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 12px 0 0 12px;"></div>
+          
+          <div class="application-content" style="padding-left: 8px;">
+            <div class="application-header" style="display: flex; justify-content: between; align-items: flex-start; margin-bottom: 12px;">
+              <div style="flex: 1;">
+                <h3 style="margin: 0 0 8px;">
+                  <a href="{% url 'jobs:detail' application.job.pk %}" style="color: inherit; text-decoration: none;">
+                    {{ application.job.title }}
+                  </a>
+                </h3>
+                <div class="application-meta" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                  <span class="company" style="font-weight: 600; color: #374151;">{{ application.job.company }}</span>
+                  {% if application.job.location %}
+                    <span class="job-location" style="color: #6b7280;">{{ application.job.location }}</span>
+                  {% endif %}
+                  <span class="applied-date" style="color: #6b7280; font-size: 0.875rem;">Applied {{ application.applied_at|date:"M j, Y" }}</span>
+                </div>
+              </div>
+              
+              <div style="text-align: right; margin-left: 16px;">
+                <div class="status-badge status-{{ application.status_display_class }}" style="padding: 6px 12px; border-radius: 16px; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; display: inline-block;">
+                  {{ application.get_status_display }}
+                </div>
+                <br>
+                <a href="{% url 'jobs:application_detail' application.pk %}" class="btn btn-outline" style="font-size: 0.85rem; padding: 4px 12px;">
+                  View Details
+                </a>
+              </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-section" style="margin: 16px 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.9rem; color: #4b5563; font-weight: 500;">Application Progress</span>
+                <span style="font-size: 0.85rem; color: #6b7280;">{{ application.get_status_progress }}% complete</span>
+              </div>
+              <div class="progress-bar" style="background: #e5e7eb; height: 6px; border-radius: 3px; overflow: hidden;">
+                <div class="progress-fill" style="background: linear-gradient(90deg, #2563eb, #3b82f6); height: 100%; width: {{ application.get_status_progress }}%; transition: width 0.5s ease;"></div>
+              </div>
+            </div>
+
+            <!-- Job Details -->
+            <div class="job-summary" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f3f4f6;">
+              {% if application.job.salary_min or application.job.salary_max %}
+                <span class="salary" style="color: #059669; font-weight: 600; font-size: 0.9rem;">
+                  {{ application.job.salary_range_display }}
+                </span>
+              {% endif %}
+              <span class="work-type work-type-{{ application.job.work_type|lower }}" style="background: #f3f4f6; color: #374151; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem;">
+                {{ application.job.get_work_type_display }}
+              </span>
+              {% if application.job.visa_sponsorship %}
+                <span class="visa-badge" style="background: #dbeafe; color: #1d4ed8; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem;">
+                  Visa Sponsorship
+                </span>
+              {% endif %}
+            </div>
+
+            <!-- Cover Letter Preview -->
+            {% if application.cover_letter %}
+              <div class="cover-letter-section" style="margin-top: 16px;">
+                <details style="cursor: pointer;">
+                  <summary style="font-weight: 500; color: #2563eb; font-size: 0.9rem;">View my application note</summary>
+                  <div class="cover-letter-content" style="margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 6px; font-size: 0.9rem; color: #4b5563; border-left: 3px solid #2563eb;">
+                    {{ application.cover_letter|linebreaks }}
+                  </div>
+                </details>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Status Guide -->
+    <div class="status-guide card" style="margin-top: 32px; background: #f8fafc;">
+      <h3 style="margin: 0 0 16px; font-size: 1.1rem; color: #111827;">Application Status Guide</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; font-size: 0.9rem;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="status-dot" style="width: 12px; height: 12px; border-radius: 50%; background: #dbeafe;"></div>
+          <div><strong>Applied:</strong> Application submitted</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="status-dot" style="width: 12px; height: 12px; border-radius: 50%; background: #fef3c7;"></div>
+          <div><strong>Under Review:</strong> Being evaluated by employer</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="status-dot" style="width: 12px; height: 12px; border-radius: 50%; background: #e0e7ff;"></div>
+          <div><strong>Interview:</strong> Interview scheduled or completed</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="status-dot" style="width: 12px; height: 12px; border-radius: 50%; background: #d1fae5;"></div>
+          <div><strong>Offer:</strong> Job offer extended</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="status-dot" style="width: 12px; height: 12px; border-radius: 50%; background: #dcfce7;"></div>
+          <div><strong>Accepted:</strong> Congratulations! 🎉</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="status-dot" style="width: 12px; height: 12px; border-radius: 50%; background: #fee2e2;"></div>
+          <div><strong>Not Selected:</strong> Position filled by another candidate</div>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <div class="empty-state card" style="text-align: center; padding: 48px 24px;">
+      <h3 style="color: #6b7280; margin-bottom: 12px;">No Applications Yet</h3>
+      <p style="color: #9ca3af; margin-bottom: 24px;">You haven't applied to any jobs yet. Start browsing and applying to positions that interest you.</p>
+      <a href="{% url 'jobs:search' %}" class="btn">Browse Jobs</a>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+.applications-container { 
+  max-width: 900px; 
+  margin: 0 auto; 
+}
+
+.page-description { 
+  color: #6b7280; 
+  margin: 4px 0 0 0; 
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+.status-indicator {
+  background: var(--status-color, #e5e7eb);
+}
+
+.status-applied, .status-indicator.status-applied { background: #3b82f6 !important; }
+.status-reviewing, .status-indicator.status-reviewing { background: #f59e0b !important; }
+.status-interview, .status-indicator.status-interview { background: #8b5cf6 !important; }
+.status-offer, .status-indicator.status-offer { background: #10b981 !important; }
+.status-accepted, .status-indicator.status-accepted { background: #059669 !important; }
+.status-rejected, .status-indicator.status-rejected { background: #ef4444 !important; }
+.status-withdrawn, .status-indicator.status-withdrawn { background: #6b7280 !important; }
+
+.status-badge {
+  text-align: center;
+}
+.status-badge.status-applied { background: #dbeafe; color: #1e40af; }
+.status-badge.status-reviewing { background: #fef3c7; color: #92400e; }
+.status-badge.status-interview { background: #e0e7ff; color: #3730a3; }
+.status-badge.status-offer { background: #d1fae5; color: #065f46; }
+.status-badge.status-accepted { background: #dcfce7; color: #166534; }
+.status-badge.status-rejected { background: #fee2e2; color: #991b1b; }
+.status-badge.status-withdrawn { background: #f3f4f6; color: #374151; }
+
+.application-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.work-type-remote { background: #dcfce7 !important; color: #166534 !important; }
+.work-type-hybrid { background: #fef3c7 !important; color: #92400e !important; }
+
+details summary {
+  list-style: none;
+  outline: none;
+}
+details summary::-webkit-details-marker {
+  display: none;
+}
+details summary::before {
+  content: '▶';
+  margin-right: 6px;
+  transition: transform 0.2s ease;
+  font-size: 0.8rem;
+}
+details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .application-header {
+    flex-direction: column !important;
+    gap: 12px;
+  }
+  
+  .application-header > div:last-child {
+    text-align: left !important;
+    margin-left: 0 !important;
+  }
+  
+  .job-summary {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+}
+</style>
+{% endblock %}

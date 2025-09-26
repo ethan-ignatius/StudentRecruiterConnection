@@ -24,6 +24,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("profiles/", include(("profiles.urls", "profiles"), namespace="profiles")),
+    path("jobs/", include(("jobs.urls", "jobs"), namespace="jobs")),  # <-- Added jobs URLs
     path("", include("django.contrib.auth.urls")),  # /login, /logout, etc.
     path("recommended/", include('recommended.urls')),
 ]
