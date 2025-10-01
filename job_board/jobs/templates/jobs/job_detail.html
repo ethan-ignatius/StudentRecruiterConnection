@@ -3,6 +3,11 @@
 
 {% block content %}
 <div class="job-detail-container">
+  {% if user.is_authenticated and user.account_type == 'RECRUITER' %}
+    <div style="margin: 0 0 16px 0;">
+      <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline">← Back to My Jobs</a>
+    </div>
+  {% endif %}
   <!-- Job Header -->
   <div class="job-header-card card">
     <div class="job-header-content">
@@ -15,37 +20,16 @@
           {% endif %}
         </div>
       </div>
-      
+
       <div class="job-actions">
-        {% if user_applied %}
-          <div class="applied-status">
-            <div class="status-badge status-{{ user_application.status_display_class }}">
-              {{ user_application.get_status_display }}
-            </div>
-            <p class="applied-text">Applied {{ user_application.applied_at|date:"M j, Y" }}</p>
-            <a href="{% url 'jobs:application_detail' user_application.pk %}" class="btn btn-outline" style="margin-top: 8px; font-size: 0.9rem;">Track Status</a>
+        {% if user_applied and user_application %}
+          <!-- Replace Apply button with text -->
+          <div class="applied-badge">Already Applied</div>
+          <div style="margin-top:8px;">
+            <a href="{% url 'jobs:application_detail' user_application.pk %}" class="btn btn-outline" style="font-size:0.9rem;">View Application</a>
           </div>
         {% elif can_apply %}
-          <div id="quick-apply-section">
-            <button type="button" id="quick-apply-btn" class="btn btn-primary">Quick Apply</button>
-            <div id="quick-apply-form" style="display: none; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 12px; min-width: 320px;">
-              <form id="quick-apply-ajax-form">
-                {% csrf_token %}
-                <div class="field">
-                  {{ quick_form.tailored_note.label_tag }}
-                  {{ quick_form.tailored_note }}
-                  <div class="field-help">{{ quick_form.tailored_note.help_text }}</div>
-                </div>
-                <div style="margin-top: 12px; display: flex; gap: 8px;">
-                  <button type="submit" class="btn btn-primary" style="flex: 1;">Apply Now</button>
-                  <button type="button" id="cancel-quick-apply" class="btn btn-outline">Cancel</button>
-                </div>
-              </form>
-            </div>
-            <div style="margin-top: 8px;">
-              <a href="{% url 'jobs:apply' job.pk %}" class="btn btn-outline" style="font-size: 0.9rem;">Full Application</a>
-            </div>
-          </div>
+          <button type="button" id="quick-apply-btn" class="btn btn-primary">Apply</button>
         {% elif not user.is_authenticated %}
           <a href="{% url 'login' %}" class="btn btn-primary">Login to Apply</a>
         {% elif user == job.posted_by %}
@@ -56,68 +40,63 @@
         {% endif %}
       </div>
     </div>
-    
+
     <div class="job-meta-bar">
       <div class="job-meta-item">
         <span class="meta-label">Work Type:</span>
         <span class="work-type work-type-{{ job.work_type|lower }}">{{ job.get_work_type_display }}</span>
       </div>
-      
       {% if job.salary_min or job.salary_max %}
-        <div class="job-meta-item">
-          <span class="meta-label">Salary:</span>
-          <span class="salary">{{ job.salary_range_display }}</span>
-        </div>
+      <div class="job-meta-item">
+        <span class="meta-label">Salary:</span>
+        <span class="salary">{{ job.salary_range_display }}</span>
+      </div>
       {% endif %}
-      
       {% if job.visa_sponsorship %}
-        <div class="job-meta-item">
-          <span class="visa-badge">Visa Sponsorship Available</span>
-        </div>
+      <div class="job-meta-item">
+        <span class="meta-label">Visa:</span>
+        <span class="visa">Sponsorship Available</span>
+      </div>
       {% endif %}
-      
       <div class="job-meta-item">
         <span class="meta-label">Posted:</span>
-        <span class="posted-date">{{ job.created_at|timesince }} ago</span>
+        <span class="posted">{{ job.created_at|date:"M d, Y" }}</span>
       </div>
     </div>
   </div>
-  
+
+  <!-- Main Content Grid -->
   <div class="job-content-grid">
-    <!-- Main Content -->
-    <div class="job-main-content">
-      <!-- Job Description -->
-      <section class="job-section card">
-        <h3>About This Role</h3>
-        <div class="job-description">
+    <!-- Left column -->
+    <div class="job-main">
+      <div class="card section">
+        <h3>About the Role</h3>
+        <div class="prose">
           {{ job.description|linebreaks }}
         </div>
-      </section>
-      
-      <!-- Requirements -->
+      </div>
+
       {% if job.requirements %}
-        <section class="job-section card">
-          <h3>Requirements</h3>
-          <div class="job-requirements">
-            {{ job.requirements|linebreaks }}
-          </div>
-        </section>
+      <div class="card section">
+        <h3>Requirements</h3>
+        <div class="prose">
+          {{ job.requirements|linebreaks }}
+        </div>
+      </div>
       {% endif %}
-      
-      <!-- Benefits -->
+
       {% if job.benefits %}
-        <section class="job-section card">
-          <h3>Benefits & Perks</h3>
-          <div class="job-benefits">
-            {{ job.benefits|linebreaks }}
-          </div>
-        </section>
+      <div class="card section">
+        <h3>Benefits</h3>
+        <div class="prose">
+          {{ job.benefits|linebreaks }}
+        </div>
+      </div>
       {% endif %}
     </div>
-    
+
     <!-- Sidebar -->
     <div class="job-sidebar">
-      <!-- Skills Required -->
       {% if job.required_skills.all %}
         <div class="skills-card card">
           <h4>Required Skills</h4>
@@ -128,382 +107,163 @@
           </div>
         </div>
       {% endif %}
-      
-      <!-- Nice-to-Have Skills -->
+
       {% if job.nice_to_have_skills.all %}
         <div class="skills-card card">
-          <h4>Nice-to-Have Skills</h4>
+          <h4>Nice to Have</h4>
           <div class="skills-list">
             {% for skill in job.nice_to_have_skills.all %}
-              <span class="skill-tag skill-nice">{{ skill.name }}</span>
+              <span class="skill-tag">{{ skill.name }}</span>
             {% endfor %}
           </div>
         </div>
       {% endif %}
-      
-      <!-- Job Details -->
-      <div class="job-details-card card">
-        <h4>Job Details</h4>
-        <div class="detail-list">
-          <div class="detail-item">
-            <span class="detail-label">Company:</span>
-            <span class="detail-value">{{ job.company }}</span>
-          </div>
-          
-          {% if job.location %}
-            <div class="detail-item">
-              <span class="detail-label">Location:</span>
-              <span class="detail-value">{{ job.location }}</span>
-            </div>
-          {% endif %}
-          
-          <div class="detail-item">
-            <span class="detail-label">Work Type:</span>
-            <span class="detail-value">{{ job.get_work_type_display }}</span>
-          </div>
-          
-          <div class="detail-item">
-            <span class="detail-label">Posted:</span>
-            <span class="detail-value">{{ job.created_at|date:"M d, Y" }}</span>
-          </div>
-          
-          {% if job.expires_at %}
-            <div class="detail-item">
-              <span class="detail-label">Expires:</span>
-              <span class="detail-value">{{ job.expires_at|date:"M d, Y" }}</span>
-            </div>
-          {% endif %}
+
+      <!-- Company + Location -->
+      <div class="card">
+        <h4>Company</h4>
+        <div class="detail-row">
+          <div class="detail-label">Name</div>
+          <div class="detail-value">{{ job.company }}</div>
         </div>
-      </div>
-      
-      <!-- Back to Search -->
-      <div class="navigation-card">
-        <a href="{% url 'jobs:search' %}" class="btn btn-outline btn-block">← Back to Job Search</a>
+        {% if job.location %}
+        <div class="detail-row">
+          <div class="detail-label">Location</div>
+          <div class="detail-value">{{ job.location }}</div>
+        </div>
+        {% endif %}
+        {% if job.expires_at %}
+        <div class="detail-row">
+          <div class="detail-label">Expires</div>
+          <div class="detail-value">{{ job.expires_at|date:"M d, Y" }}</div>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
+
+  {% if can_apply %}
+  <!-- Application section at the bottom -->
+  <div id="apply-section" class="card" style="display:none; margin-top: 24px;">
+    <h3>Finish Application</h3>
+    <p class="muted" style="margin-top:-4px;">Add a short note for the employer (optional)</p>
+
+    <form id="quick-apply-ajax-form">
+      {% csrf_token %}
+      <div class="field">
+        {{ quick_form.tailored_note.label_tag }}
+        {{ quick_form.tailored_note }}
+        <div class="field-help">{{ quick_form.tailored_note.help_text }}</div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary">Submit Application</button>
+        <button type="button" id="cancel-quick-apply" class="btn btn-outline">Cancel</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
 </div>
 
 <style>
-.job-detail-container { max-width: 1200px; margin: 0 auto; }
+.job-detail-container { max-width:1100px; margin:0 auto; padding:16px; }
+.job-header-card { margin-bottom:16px; }
+.job-header-content { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.job-title-section h1 { margin:0; }
+.job-company h2 { margin:0; font-size:1.125rem; font-weight:600; }
+.job-location { color:#6b7280; margin-left:0; display:block; }
+.job-actions { min-width:260px; text-align:right; }
+.applied-badge { display:inline-block; background:#dcfce7; color:#166534; border:1px solid #22c55e; border-radius:999px; padding:6px 12px; font-weight:600; margin-bottom:6px; }
+.job-meta-bar { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:8px; margin-top:12px; color:#374151; }
+.job-meta-item { display:flex; align-items:center; gap:8px; }
+.meta-label { font-weight:600; color:#111827; }
+.section h3 { margin:0 0 8px; }
+.skills-card .skills-list { display:flex; flex-wrap:wrap; gap:8px; }
+.skill-tag { display:inline-block; padding:6px 10px; border:1px solid #e5e7eb; background:#f9fafb; border-radius:999px; font-size:0.85rem; }
+.skill-required { background:#eef2ff; border-color:#c7d2fe; }
+.job-content-grid { display:grid; grid-template-columns:1fr 320px; gap:16px; }
+.card.section { margin-bottom:16px; }
 
-.job-header-card { margin-bottom: 24px; }
-.job-header-content { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+/* Company/Location summary alignment */
+.detail-row { display:grid; grid-template-columns:100px 1fr; gap:8px; padding:6px 0; border-bottom:1px dashed #e5e7eb; }
+.detail-label { color:#6b7280; text-align:left; }
+.detail-value { text-align:left; }
 
-.job-title-section h1 { 
-  margin: 0 0 8px; 
-  font-size: 2rem; 
-  color: #111827; 
-  line-height: 1.2; 
-}
-
-.job-company h2 { 
-  margin: 0 0 4px; 
-  font-size: 1.25rem; 
-  color: #374151; 
-  font-weight: 600; 
-}
-
-.job-location { 
-  color: #6b7280; 
-  font-size: 1rem; 
-}
-
-.job-actions { 
-  flex-shrink: 0; 
-  margin-left: 24px; 
-}
-
-.applied-status { 
-  text-align: center; 
-}
-
-.status-badge { 
-  display: inline-block;
-  padding: 8px 16px; 
-  border-radius: 20px; 
-  font-weight: 600; 
-  margin-bottom: 8px;
-  text-align: center;
-}
-.status-applied { background: #dbeafe; color: #1e40af; }
-.status-reviewing { background: #fef3c7; color: #92400e; }
-.status-interview { background: #e0e7ff; color: #3730a3; }
-.status-offer { background: #d1fae5; color: #065f46; }
-.status-accepted { background: #dcfce7; color: #166534; }
-.status-rejected { background: #fee2e2; color: #991b1b; }
-.status-withdrawn { background: #f3f4f6; color: #374151; }
-
-.applied-text { 
-  color: #6b7280; 
-  font-size: 0.875rem; 
-  margin: 0;
-}
-
-.owner-actions { 
-  display: flex; 
-  gap: 8px; 
-}
-
-.job-meta-bar { 
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 24px; 
-  padding-top: 20px; 
-  border-top: 1px solid #e5e7eb; 
-}
-
-.job-meta-item { 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-}
-
-.meta-label { 
-  color: #6b7280; 
-  font-weight: 500; 
-}
-
-.work-type { 
-  background: #f3f4f6; 
-  color: #374151; 
-  padding: 4px 12px; 
-  border-radius: 6px; 
-  font-size: 0.875rem; 
-  font-weight: 600;
-}
-
-.work-type-remote { background: #dcfce7; color: #166534; }
-.work-type-hybrid { background: #fef3c7; color: #92400e; }
-
-.salary { 
-  color: #059669; 
-  font-weight: 600; 
-}
-
-.visa-badge { 
-  background: #dbeafe; 
-  color: #1d4ed8; 
-  padding: 4px 12px; 
-  border-radius: 6px; 
-  font-size: 0.875rem; 
-  font-weight: 600;
-}
-
-.posted-date { 
-  color: #6b7280; 
-}
-
-.job-content-grid { 
-  display: grid; 
-  grid-template-columns: 1fr 300px; 
-  gap: 24px; 
-}
-
-.job-section { 
-  margin-bottom: 24px; 
-}
-
-.job-section h3 { 
-  margin: 0 0 16px; 
-  font-size: 1.25rem; 
-  color: #111827; 
-}
-
-.job-description, 
-.job-requirements, 
-.job-benefits { 
-  line-height: 1.6; 
-  color: #374151; 
-}
-
-.job-sidebar { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 20px; 
-}
-
-.skills-card h4, 
-.job-details-card h4 { 
-  margin: 0 0 12px; 
-  font-size: 1.1rem; 
-  color: #111827; 
-}
-
-.skills-list { 
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 8px; 
-}
-
-.skill-tag { 
-  padding: 6px 12px; 
-  border-radius: 6px; 
-  font-size: 0.875rem; 
-  font-weight: 500;
-}
-
-.skill-required { 
-  background: #fef2f2; 
-  color: #b91c1c; 
-  border: 1px solid #fecaca;
-}
-
-.skill-nice { 
-  background: #f0f9ff; 
-  color: #1e40af; 
-  border: 1px solid #bfdbfe;
-}
-
-.detail-list { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 12px; 
-}
-
-.detail-item { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: flex-start;
-}
-
-.detail-label { 
-  color: #6b7280; 
-  font-weight: 500;
-  flex-shrink: 0;
-  margin-right: 12px;
-}
-
-.detail-value { 
-  color: #111827; 
-  text-align: right;
-  flex-grow: 1;
-}
-
-.btn-block { 
-  width: 100%; 
-  justify-content: center; 
-}
-
-.btn-primary { 
-  background: #2563eb; 
-  color: white;
-  font-weight: 600;
-}
-
-#quick-apply-form textarea {
-  width: 100%;
-  resize: vertical;
-  min-height: 80px;
-}
-
-@media (max-width: 768px) {
-  .job-header-content { 
-    flex-direction: column; 
-    gap: 16px; 
-  }
-  
-  .job-actions { 
-    margin-left: 0; 
-    width: 100%;
-  }
-  
-  .owner-actions { 
-    flex-direction: column; 
-  }
-  
-  .job-meta-bar { 
-    flex-direction: column; 
-    gap: 12px; 
-  }
-  
-  .job-content-grid { 
-    grid-template-columns: 1fr; 
-  }
-  
-  .job-sidebar { 
-    order: -1; 
-  }
-  
-  .detail-item { 
-    flex-direction: column; 
-    gap: 4px;
-  }
-  
-  .detail-value { 
-    text-align: left; 
-  }
+@media (max-width: 900px) {
+  .job-content-grid { grid-template-columns:1fr; }
+  .job-actions { text-align:left; min-width:auto; }
+  .detail-label, .detail-value { text-align:left; }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const quickApplyBtn = document.getElementById('quick-apply-btn');
-  const quickApplyForm = document.getElementById('quick-apply-form');
-  const cancelBtn = document.getElementById('cancel-quick-apply');
-  const ajaxForm = document.getElementById('quick-apply-ajax-form');
+  const applySection  = document.getElementById('apply-section');
+  const cancelBtn     = document.getElementById('cancel-quick-apply');
+  const ajaxForm      = document.getElementById('quick-apply-ajax-form');
 
-  if (quickApplyBtn) {
+  if (quickApplyBtn && applySection) {
     quickApplyBtn.addEventListener('click', function() {
-      quickApplyForm.style.display = quickApplyForm.style.display === 'none' ? 'block' : 'none';
-      if (quickApplyForm.style.display === 'block') {
-        quickApplyForm.querySelector('textarea').focus();
-      }
+      applySection.style.display = 'block';
+      const ta = applySection.querySelector('textarea');
+      if (ta && ta.focus) ta.focus({ preventScroll: true });
+      applySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 
-  if (cancelBtn) {
+  if (cancelBtn && applySection) {
     cancelBtn.addEventListener('click', function() {
-      quickApplyForm.style.display = 'none';
+      applySection.style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 
   if (ajaxForm) {
-    ajaxForm.addEventListener('submit', function(e) {
+    ajaxForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-      
-      const formData = new FormData(ajaxForm);
       const submitBtn = ajaxForm.querySelector('button[type="submit"]');
       const originalText = submitBtn.textContent;
-      
+
       submitBtn.disabled = true;
       submitBtn.textContent = 'Applying...';
-      
-      fetch('{% url "jobs:quick_apply" job.pk %}', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+
+      try {
+        const formData = new FormData(ajaxForm);
+        const resp = await fetch('{% url "jobs:quick_apply" job.pk %}', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'same-origin'
+        });
+
+        // Read as text first (works even if server sets an unexpected content-type)
+        const raw = await resp.text();
+        let data = null;
+        try { data = JSON.parse(raw); } catch (_) { /* not JSON; that's fine */ }
+
+        // Treat any 2xx response as success, even if JSON parsing fails
+        if (resp.status >= 200 && resp.status < 300 && (!data || data.success !== false)) {
+            if (data && data.redirect_url) {
+              window.location.assign(data.redirect_url);
+            } else {
+              window.location.reload();
+            }
+            return; // stop processing
         }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Show success message
-          const successDiv = document.createElement('div');
-          successDiv.className = 'flash success';
-          successDiv.style.marginBottom = '16px';
-          successDiv.innerHTML = '<strong>Success!</strong> ' + data.message;
-          
-          document.querySelector('.job-header-card').insertBefore(successDiv, document.querySelector('.job-header-card').firstChild);
-          
-          // Hide quick apply section and reload page after delay
-          document.getElementById('quick-apply-section').style.display = 'none';
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-        } else {
-          alert('Error: ' + data.error);
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
+
+        // Otherwise, surface the best available error message
+        const msg = (data && (data.error || data.message)) || 'Unable to submit application.';
+        throw new Error(msg);
+
+      } catch (err) {
+        alert(err.message || 'An error occurred. Please try again.');
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
-      });
+      }
     });
   }
 });

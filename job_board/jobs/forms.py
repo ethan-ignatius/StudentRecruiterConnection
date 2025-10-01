@@ -57,9 +57,12 @@ class JobSearchForm(forms.Form):
         label="Maximum Salary ($)"
     )
     
-    visa_sponsorship = forms.BooleanField(
+    visa_sponsorship = forms.TypedChoiceField(
         required=False,
-        label="Visa sponsorship available"
+        label="Visa sponsorship",
+        choices=((True, "Yes"), (False, "No")),
+        coerce=lambda v: v in (True, "True", "true", "1", "on", "yes", "y"),
+        widget=forms.Select()
     )
     
     def clean_skills(self):
@@ -89,12 +92,21 @@ class JobForm(forms.ModelForm):
         help_text="Comma-separated skills, e.g. Python, SQL, React",
         widget=forms.TextInput(attrs={'placeholder': 'Python, SQL, React...'})
     )
-    
+
     nice_to_have_skills_csv = forms.CharField(
         required=False,
         label="Nice-to-Have Skills",
         help_text="Comma-separated skills",
         widget=forms.TextInput(attrs={'placeholder': 'Docker, AWS, GraphQL...'})
+    )
+
+    # Render visa sponsorship as a Yes/No select rather than a checkbox
+    visa_sponsorship = forms.TypedChoiceField(
+        required=False,
+        label="Visa sponsorship",
+        choices=((True, "Yes"), (False, "No")),
+        coerce=lambda v: v in (True, "True", "true", "1", "on", "yes", "y"),
+        widget=forms.Select()
     )
 
     class Meta:
@@ -113,73 +125,111 @@ class JobForm(forms.ModelForm):
             'salary_max': forms.NumberInput(attrs={'min': 0, 'placeholder': '150000'}),
         }
 
+    # A concise US-cities set that matches the <datalist> values (City, ST)
+    US_CITIES = {
+        "New York, NY","Los Angeles, CA","Chicago, IL","Houston, TX","Phoenix, AZ",
+        "Philadelphia, PA","San Antonio, TX","San Diego, CA","Dallas, TX","San Jose, CA",
+        "Austin, TX","Jacksonville, FL","San Francisco, CA","Columbus, OH","Fort Worth, TX",
+        "Indianapolis, IN","Charlotte, NC","Seattle, WA","Denver, CO","Boston, MA",
+        "Detroit, MI","Nashville, TN","Portland, OR","Oklahoma City, OK","Las Vegas, NV",
+        "Memphis, TN","Louisville, KY","Baltimore, MD","Milwaukee, WI","Albuquerque, NM",
+        "Tucson, AZ","Fresno, CA","Sacramento, CA","Kansas City, MO","Atlanta, GA",
+        "Miami, FL","New Orleans, LA","Minneapolis, MN","Saint Paul, MN","Honolulu, HI",
+        "Anchorage, AK","Montgomery, AL","Juneau, AK","Little Rock, AR","Denver, CO",
+        "Hartford, CT","Dover, DE","Tallahassee, FL","Atlanta, GA","Boise, ID",
+        "Springfield, IL","Indianapolis, IN","Des Moines, IA","Topeka, KS","Frankfort, KY",
+        "Baton Rouge, LA","Augusta, ME","Annapolis, MD","Boston, MA","Lansing, MI",
+        "Saint Paul, MN","Jackson, MS","Jefferson City, MO","Helena, MT","Lincoln, NE",
+        "Carson City, NV","Concord, NH","Trenton, NJ","Santa Fe, NM","Albany, NY",
+        "Raleigh, NC","Bismarck, ND","Columbus, OH","Oklahoma City, OK","Salem, OR",
+        "Harrisburg, PA","Providence, RI","Columbia, SC","Pierre, SD","Nashville, TN",
+        "Austin, TX","Salt Lake City, UT","Montpelier, VT","Richmond, VA","Olympia, WA",
+        "Charleston, WV","Madison, WI","Cheyenne, WY","Washington, DC",
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Make certain fields required
+        # Make Location a required field
+        self.fields['location'].required = True
+        # Keep your existing required flags
         self.fields['title'].required = True
         self.fields['company'].required = True
         self.fields['description'].required = True
-        
-        # Pre-populate skills if editing
+
+        # Pre-populate skills if editing (unchanged)
         if self.instance and self.instance.pk:
             req_skills = [s.name for s in self.instance.required_skills.all().order_by('name')]
             nice_skills = [s.name for s in self.instance.nice_to_have_skills.all().order_by('name')]
-            
             self.fields['required_skills_csv'].initial = ', '.join(req_skills)
             self.fields['nice_to_have_skills_csv'].initial = ', '.join(nice_skills)
 
+    def clean(self):
+        cleaned = super().clean()
+        work_type = cleaned.get('work_type')
+        loc = (cleaned.get('location') or '').strip()
+
+        if work_type == Job.WorkType.REMOTE:
+            # Force the canonical value for remote jobs
+            cleaned['location'] = 'Remote'
+            return cleaned
+
+        # On-site / Hybrid => must be a US city from our list
+        if not loc:
+            self.add_error('location', "Location is required for on-site or hybrid roles.")
+            return cleaned
+
+        # Normalize spacing/casing; compare to our canonical set
+        normalized = ', '.join([part.strip() for part in loc.split(',', 1)]) if ',' in loc else loc
+        if normalized not in self.US_CITIES:
+            self.add_error(
+                'location',
+                "Please choose a US city from the list (format: City, ST)."
+            )
+        return cleaned
+    
+    # ---------- FIX START ----------
     def clean_required_skills_csv(self):
-        return self._clean_skills_csv('required_skills_csv')
-    
-    def clean_nice_to_have_skills_csv(self):
-        return self._clean_skills_csv('nice_to_have_skills_csv')
-    
-    def _clean_skills_csv(self, field_name):
-        """Parse and deduplicate comma-separated skills."""
-        raw = self.cleaned_data.get(field_name, '').strip()
+        """
+        Parse the comma-separated string into a list of whole skill names
+        (prevents it from being treated as characters later).
+        """
+        raw = (self.cleaned_data.get('required_skills_csv') or '').strip()
         if not raw:
             return []
-        
-        seen = set()
-        skills = []
-        for part in (p.strip() for p in raw.split(',')):
-            if not part:
-                continue
-            key = part.lower()
-            if key in seen:
-                continue
-            seen.add(key)
-            skills.append(part)
-        
-        return skills
+        parts = [p.strip() for p in raw.replace('\n', ',').split(',') if p.strip()]
+        seen, out = set(), []
+        for p in parts:
+            if p not in seen:
+                seen.add(p)
+                out.append(p)
+        return out
 
-    def clean(self):
-        cleaned_data = super().clean()
-        salary_min = cleaned_data.get('salary_min')
-        salary_max = cleaned_data.get('salary_max')
-        
-        if salary_min and salary_max and salary_min > salary_max:
-            raise forms.ValidationError("Minimum salary cannot be greater than maximum salary.")
-        
-        return cleaned_data
+    def clean_nice_to_have_skills_csv(self):
+        raw = (self.cleaned_data.get('nice_to_have_skills_csv') or '').strip()
+        if not raw:
+            return []
+        parts = [p.strip() for p in raw.replace('\n', ',').split(',') if p.strip()]
+        seen, out = set(), []
+        for p in parts:
+            if p not in seen:
+                seen.add(p)
+                out.append(p)
+        return out
+    # ---------- FIX END ----------
+
 
     def save(self, commit=True):
         job = super().save(commit=commit)
-        
+        # Your existing skills saving logic (unchanged)…
         if commit and job.pk:
-            # Handle required skills
             req_skill_names = self.cleaned_data.get('required_skills_csv', [])
             req_skill_objs = [Skill.objects.get_or_create(name=name)[0] for name in req_skill_names]
             job.required_skills.set(req_skill_objs)
-            
-            # Handle nice-to-have skills
+
             nice_skill_names = self.cleaned_data.get('nice_to_have_skills_csv', [])
             nice_skill_objs = [Skill.objects.get_or_create(name=name)[0] for name in nice_skill_names]
             job.nice_to_have_skills.set(nice_skill_objs)
-        
         return job
-
 
 class QuickApplicationForm(forms.Form):
     """Form for one-click application with optional tailored note"""

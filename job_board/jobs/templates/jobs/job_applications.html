@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Applications: {{ job.title }}{% endblock %}
+{% block content %}
+<!-- job_board/jobs/templates/jobs/job_applications.html -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+  <div>
+    <h1>Applications</h1>
+    <p style="margin:8px 0 0;color:#6b7280;">
+      {{ total_applications }} application{{ total_applications|pluralize }} for <strong>{{ job.title }}</strong>.
+    </p>
+    {% if job.status == job.Status.CLOSED %}
+      <div class="card" style="border-left:4px solid #991b1b; background:#fef2f2; margin-top:12px;">
+        <strong>This job is closed</strong>. New applications are disabled, but existing ones remain visible here.
+      </div>
+    {% endif %}
+  </div>
+  <div>
+    <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline">Job Page</a>
+    <a href="{% url 'jobs:my_jobs' %}" class="btn">Back to My Jobs</a>
+  </div>
+</div>
+
+{% for status, items in status_groups.items %}
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h2 style="margin:0;">{{ status }}</h2>
+      <span style="color:#6b7280;">{{ items|length }} application{{ items|length|pluralize }}</span>
+    </div>
+
+    {% for application in items %}
+      <!-- Row: name + time vertically centered with View button -->
+      <div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #eee;">
+        <div style="flex:1 1 auto;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <a class="link" href="{% url 'profiles:public_profile' application.applicant.username %}">
+              {{ application.applicant.get_full_name|default:application.applicant.username }}
+            </a>
+            <span style="color:#6b7280;">• {{ application.applied_at|date:"M j, Y, g:i a" }}</span>
+          </div>
+        </div>
+        <div>
+          <a class="btn btn-outline" href="{% url 'jobs:application_detail' application.pk %}">View</a>
+        </div>
+      </div>
+    {% empty %}
+      <div class="card"><p>No applications in this status.</p></div>
+    {% endfor %}
+  </div>
+{% endfor %}
+
+{% endblock %}

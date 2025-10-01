@@ -1,7 +1,5 @@
-<!-- templates/jobs/post_job.html -->
 {% extends "base.html" %}
 {% block title %}Post a Job{% endblock %}
-
 {% block content %}
 <div class="form-container" style="max-width: 800px; margin: 0 auto;">
   <h1>Post a New Job</h1>
@@ -9,37 +7,141 @@
 
   <form method="post" class="job-form">
     {% csrf_token %}
-    
+
+    <!-- Job Basics -->
     <div class="form-section card">
       <h3>Job Basics</h3>
       <div class="form-grid">
         <div class="field">
-          {{ form.title.label_tag }}
-          {{ form.title }}
+          {{ form.title.label_tag }} {{ form.title }}
           {% if form.title.errors %}
             <ul class="errorlist">{% for error in form.title.errors %}<li>{{ error }}</li>{% endfor %}</ul>
           {% endif %}
         </div>
-        
+
         <div class="field">
-          {{ form.company.label_tag }}
-          {{ form.company }}
+          {{ form.company.label_tag }} {{ form.company }}
           {% if form.company.errors %}
             <ul class="errorlist">{% for error in form.company.errors %}<li>{{ error }}</li>{% endfor %}</ul>
           {% endif %}
         </div>
-        
-        <div class="field">
+
+        <div class="field" id="location-field">
           {{ form.location.label_tag }}
-          {{ form.location }}
+          <input
+            type="text"
+            id="id_location"
+            name="location"
+            list="us-cities"
+            placeholder="City, State"
+            required
+            value="{{ form.location.value|default_if_none:'' }}"
+          >
           {% if form.location.errors %}
             <ul class="errorlist">{% for error in form.location.errors %}<li>{{ error }}</li>{% endfor %}</ul>
           {% endif %}
+          <datalist id="us-cities">
+            <!-- A concise but realistic US cities list (capitals + major metros).
+                You can extend this at any time; server-side validation matches this list. -->
+            <option value="New York, NY"></option>
+            <option value="Los Angeles, CA"></option>
+            <option value="Chicago, IL"></option>
+            <option value="Houston, TX"></option>
+            <option value="Phoenix, AZ"></option>
+            <option value="Philadelphia, PA"></option>
+            <option value="San Antonio, TX"></option>
+            <option value="San Diego, CA"></option>
+            <option value="Dallas, TX"></option>
+            <option value="San Jose, CA"></option>
+            <option value="Austin, TX"></option>
+            <option value="Jacksonville, FL"></option>
+            <option value="San Francisco, CA"></option>
+            <option value="Columbus, OH"></option>
+            <option value="Fort Worth, TX"></option>
+            <option value="Indianapolis, IN"></option>
+            <option value="Charlotte, NC"></option>
+            <option value="Seattle, WA"></option>
+            <option value="Denver, CO"></option>
+            <option value="Boston, MA"></option>
+            <option value="Detroit, MI"></option>
+            <option value="Nashville, TN"></option>
+            <option value="Portland, OR"></option>
+            <option value="Oklahoma City, OK"></option>
+            <option value="Las Vegas, NV"></option>
+            <option value="Memphis, TN"></option>
+            <option value="Louisville, KY"></option>
+            <option value="Baltimore, MD"></option>
+            <option value="Milwaukee, WI"></option>
+            <option value="Albuquerque, NM"></option>
+            <option value="Tucson, AZ"></option>
+            <option value="Fresno, CA"></option>
+            <option value="Sacramento, CA"></option>
+            <option value="Kansas City, MO"></option>
+            <option value="Atlanta, GA"></option>
+            <option value="Miami, FL"></option>
+            <option value="New Orleans, LA"></option>
+            <option value="Minneapolis, MN"></option>
+            <option value="Saint Paul, MN"></option>
+            <option value="Honolulu, HI"></option>
+            <option value="Anchorage, AK"></option>
+            <!-- State capitals -->
+            <option value="Montgomery, AL"></option>
+            <option value="Juneau, AK"></option>
+            <option value="Phoenix, AZ"></option>
+            <option value="Little Rock, AR"></option>
+            <option value="Sacramento, CA"></option>
+            <option value="Denver, CO"></option>
+            <option value="Hartford, CT"></option>
+            <option value="Dover, DE"></option>
+            <option value="Tallahassee, FL"></option>
+            <option value="Atlanta, GA"></option>
+            <option value="Honolulu, HI"></option>
+            <option value="Boise, ID"></option>
+            <option value="Springfield, IL"></option>
+            <option value="Indianapolis, IN"></option>
+            <option value="Des Moines, IA"></option>
+            <option value="Topeka, KS"></option>
+            <option value="Frankfort, KY"></option>
+            <option value="Baton Rouge, LA"></option>
+            <option value="Augusta, ME"></option>
+            <option value="Annapolis, MD"></option>
+            <option value="Boston, MA"></option>
+            <option value="Lansing, MI"></option>
+            <option value="Saint Paul, MN"></option>
+            <option value="Jackson, MS"></option>
+            <option value="Jefferson City, MO"></option>
+            <option value="Helena, MT"></option>
+            <option value="Lincoln, NE"></option>
+            <option value="Carson City, NV"></option>
+            <option value="Concord, NH"></option>
+            <option value="Trenton, NJ"></option>
+            <option value="Santa Fe, NM"></option>
+            <option value="Albany, NY"></option>
+            <option value="Raleigh, NC"></option>
+            <option value="Bismarck, ND"></option>
+            <option value="Columbus, OH"></option>
+            <option value="Oklahoma City, OK"></option>
+            <option value="Salem, OR"></option>
+            <option value="Harrisburg, PA"></option>
+            <option value="Providence, RI"></option>
+            <option value="Columbia, SC"></option>
+            <option value="Pierre, SD"></option>
+            <option value="Nashville, TN"></option>
+            <option value="Austin, TX"></option>
+            <option value="Salt Lake City, UT"></option>
+            <option value="Montpelier, VT"></option>
+            <option value="Richmond, VA"></option>
+            <option value="Olympia, WA"></option>
+            <option value="Charleston, WV"></option>
+            <option value="Madison, WI"></option>
+            <option value="Cheyenne, WY"></option>
+            <option value="Washington, DC"></option>
+          </datalist>
+          <div id="remote-hint" class="field-help" style="display:none;">Work type is Remote — location will be set to “Remote”.</div>
         </div>
-        
+
         <div class="field">
-          {{ form.work_type.label_tag }}
-          {{ form.work_type }}
+          {{ form.work_type.label_tag }} {{ form.work_type }}
           {% if form.work_type.errors %}
             <ul class="errorlist">{% for error in form.work_type.errors %}<li>{{ error }}</li>{% endfor %}</ul>
           {% endif %}
@@ -47,42 +149,56 @@
       </div>
     </div>
 
+    <!-- Role Details -->
     <div class="form-section card">
-      <h3>Job Description</h3>
-      <div class="form-grid">
-        <div class="field grid-span-2">
-          {{ form.description.label_tag }}
-          {{ form.description }}
-          {% if form.description.errors %}
-            <ul class="errorlist">{% for error in form.description.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      <h3>Role Details</h3>
+
+      <div class="field">
+        {{ form.description.label_tag }} {{ form.description }}
+        {% if form.description.errors %}
+          <ul class="errorlist">{% for error in form.description.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+
+      <!-- Status & Visa on one row, vertically aligned -->
+      <div class="form-grid" style="align-items:center;">
+        <div class="field">
+          {{ form.status.label_tag }} {{ form.status }}
+          {% if form.status.errors %}
+            <ul class="errorlist">{% for error in form.status.errors %}<li>{{ error }}</li>{% endfor %}</ul>
           {% endif %}
         </div>
-        
-        <div class="field grid-span-2">
-          {{ form.requirements.label_tag }}
-          {{ form.requirements }}
-          {% if form.requirements.errors %}
-            <ul class="errorlist">{% for error in form.requirements.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+
+        <div class="field">
+          {{ form.visa_sponsorship.label_tag }} {{ form.visa_sponsorship }}
+          {% if form.visa_sponsorship.errors %}
+            <ul class="errorlist">{% for error in form.visa_sponsorship.errors %}<li>{{ error }}</li>{% endfor %}</ul>
           {% endif %}
         </div>
       </div>
+
+      <div class="field" style="margin-top:16px;">
+        {{ form.requirements.label_tag }} {{ form.requirements }}
+        {% if form.requirements.errors %}
+          <ul class="errorlist">{% for error in form.requirements.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
     </div>
 
+    <!-- Skills & Qualifications -->
     <div class="form-section card">
       <h3>Skills & Qualifications</h3>
       <div class="form-grid">
         <div class="field">
-          {{ form.required_skills_csv.label_tag }}
-          {{ form.required_skills_csv }}
+          {{ form.required_skills_csv.label_tag }} {{ form.required_skills_csv }}
           {% if form.required_skills_csv.help_text %}<div class="field-help">{{ form.required_skills_csv.help_text }}</div>{% endif %}
           {% if form.required_skills_csv.errors %}
             <ul class="errorlist">{% for error in form.required_skills_csv.errors %}<li>{{ error }}</li>{% endfor %}</ul>
           {% endif %}
         </div>
-        
+
         <div class="field">
-          {{ form.nice_to_have_skills_csv.label_tag }}
-          {{ form.nice_to_have_skills_csv }}
+          {{ form.nice_to_have_skills_csv.label_tag }} {{ form.nice_to_have_skills_csv }}
           {% if form.nice_to_have_skills_csv.help_text %}<div class="field-help">{{ form.nice_to_have_skills_csv.help_text }}</div>{% endif %}
           {% if form.nice_to_have_skills_csv.errors %}
             <ul class="errorlist">{% for error in form.nice_to_have_skills_csv.errors %}<li>{{ error }}</li>{% endfor %}</ul>
@@ -91,198 +207,81 @@
       </div>
     </div>
 
+    <!-- Compensation & Perks -->
     <div class="form-section card">
-      <h3>Compensation & Benefits</h3>
+      <h3>Compensation & Perks</h3>
       <div class="form-grid">
         <div class="field">
-          {{ form.salary_min.label_tag }}
-          {{ form.salary_min }}
+          {{ form.salary_min.label_tag }} {{ form.salary_min }}
           {% if form.salary_min.errors %}
             <ul class="errorlist">{% for error in form.salary_min.errors %}<li>{{ error }}</li>{% endfor %}</ul>
           {% endif %}
         </div>
-        
+
         <div class="field">
-          {{ form.salary_max.label_tag }}
-          {{ form.salary_max }}
+          {{ form.salary_max.label_tag }} {{ form.salary_max }}
           {% if form.salary_max.errors %}
             <ul class="errorlist">{% for error in form.salary_max.errors %}<li>{{ error }}</li>{% endfor %}</ul>
           {% endif %}
         </div>
-        
-        <div class="field checkbox-field">
-          <label class="checkbox-label">
-            {{ form.visa_sponsorship }}
-            {{ form.visa_sponsorship.label }}
-          </label>
-        </div>
-        
-        <div class="field grid-span-2">
-          {{ form.benefits.label_tag }}
-          {{ form.benefits }}
-          {% if form.benefits.errors %}
-            <ul class="errorlist">{% for error in form.benefits.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-          {% endif %}
-        </div>
       </div>
-    </div>
 
-    <div class="form-section card">
-      <h3>Publishing Options</h3>
-      <div class="form-grid">
-        <div class="field">
-          {{ form.status.label_tag }}
-          {{ form.status }}
-          {% if form.status.errors %}
-            <ul class="errorlist">{% for error in form.status.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-          {% endif %}
-        </div>
-        
-        <div class="field">
-          {{ form.expires_at.label_tag }}
-          {{ form.expires_at }}
-          {% if form.expires_at.errors %}
-            <ul class="errorlist">{% for error in form.expires_at.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-
-    {% if form.non_field_errors %}
-      <div class="form-section">
-        <ul class="errorlist">
-          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-        </ul>
-      </div>
-    {% endif %}
-
-    <div class="form-actions">
-      <button type="submit" class="btn">Post Job</button>
-      <a href="{% url 'jobs:search' %}" class="btn btn-outline">Cancel</a>
-    </div>
-  </form>
-</div>
-
-<style>
-.form-container { padding: 0 16px; }
-.form-description { color: #6b7280; margin-bottom: 32px; }
-.form-section { margin-bottom: 24px; }
-.form-section h3 { margin: 0 0 16px; color: #111827; font-size: 1.125rem; }
-.form-actions { display: flex; gap: 12px; margin-top: 32px; }
-.checkbox-field { display: flex; align-items: center; }
-.checkbox-label { display: flex; align-items: center; gap: 8px; font-weight: normal; }
-</style>
-{% endblock %}
-
-<!-- templates/jobs/apply_for_job.html -->
-{% extends "base.html" %}
-{% block title %}Apply for {{ job.title }}{% endblock %}
-
-{% block content %}
-<div class="apply-container" style="max-width: 600px; margin: 0 auto;">
-  <div class="apply-header">
-    <h1>Apply for Position</h1>
-    <div class="job-summary card" style="background: #f8fafc; margin-bottom: 24px;">
-      <h3 style="margin: 0 0 8px;">{{ job.title }}</h3>
-      <p style="margin: 0; color: #6b7280;">{{ job.company }} • {{ job.location|default:"Location not specified" }}</p>
-    </div>
-  </div>
-
-  <form method="post" class="apply-form">
-    {% csrf_token %}
-    
-    <div class="form-section card">
-      <h3>Cover Letter</h3>
       <div class="field">
-        {{ form.cover_letter.label_tag }}
-        {{ form.cover_letter }}
-        <div class="field-help">Tell the employer why you're interested in this position and why you'd be a great fit.</div>
-        {% if form.cover_letter.errors %}
-          <ul class="errorlist">{% for error in form.cover_letter.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {{ form.benefits.label_tag }} {{ form.benefits }}
+        {% if form.benefits.errors %}
+          <ul class="errorlist">{% for error in form.benefits.errors %}<li>{{ error }}</li>{% endfor %}</ul>
         {% endif %}
       </div>
     </div>
 
+    <!-- Actions -->
     <div class="form-actions">
-      <button type="submit" class="btn">Submit Application</button>
-      <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline">Cancel</a>
+      <button class="btn" type="submit">Save</button>
+      <a class="btn btn-outline" href="{% url 'jobs:my_jobs' %}">Cancel</a>
     </div>
   </form>
 </div>
 
+<script>
+  (function() {
+    function byId(id){ return document.getElementById(id); }
+    function updateLocationUI() {
+      var sel = byId('id_work_type');
+      var loc = byId('id_location');
+      var hint = byId('remote-hint');
+      if (!sel || !loc) return;
+      if (sel.value === 'REMOTE') {
+        loc.value = 'Remote';
+        loc.setAttribute('readonly', 'readonly');
+        loc.removeAttribute('list');
+        if (hint) hint.style.display = 'block';
+      } else {
+        if (loc.value === 'Remote') loc.value = '';
+        loc.removeAttribute('readonly');
+        loc.setAttribute('list', 'us-cities');
+        if (hint) hint.style.display = 'none';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      var wt = document.getElementById('id_work_type');
+      if (wt) {
+        wt.addEventListener('change', updateLocationUI);
+        updateLocationUI();
+      }
+    });
+  })();
+</script>
+
 <style>
-.apply-container { padding: 0 16px; }
+/* Keep the existing artstyle */
+.form-container { padding: 0 16px; }
+.form-description { color: #6b7280; margin: 0 0 16px; }
 .form-section { margin-bottom: 24px; }
 .form-section h3 { margin: 0 0 16px; color: #111827; font-size: 1.125rem; }
-.form-actions { display: flex; gap: 12px; margin-top: 32px; }
-</style>
-{% endblock %}
-
-<!-- templates/jobs/my_applications.html -->
-{% extends "base.html" %}
-{% block title %}My Job Applications{% endblock %}
-
-{% block content %}
-<div class="applications-container">
-  <h1>My Job Applications</h1>
-  <p class="page-description">Track your job applications and their current status.</p>
-
-  {% if applications %}
-    <div class="applications-list">
-      {% for application in applications %}
-        <div class="application-card card">
-          <div class="application-header">
-            <h3><a href="{% url 'jobs:detail' application.job.pk %}">{{ application.job.title }}</a></h3>
-            <div class="application-meta">
-              <span class="company">{{ application.job.company }}</span>
-              <span class="applied-date">Applied {{ application.applied_at|timesince }} ago</span>
-              <span class="status status-{{ application.status|lower }}">{{ application.get_status_display }}</span>
-            </div>
-          </div>
-          
-          {% if application.job.location %}
-            <p class="job-location">{{ application.job.location }}</p>
-          {% endif %}
-          
-          {% if application.cover_letter %}
-            <details class="cover-letter-section">
-              <summary>View Cover Letter</summary>
-              <div class="cover-letter-content">{{ application.cover_letter|linebreaks }}</div>
-            </details>
-          {% endif %}
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="empty-state card">
-      <h3>No Applications Yet</h3>
-      <p>You haven't applied to any jobs yet. Start browsing and applying to positions that interest you.</p>
-      <a href="{% url 'jobs:search' %}" class="btn">Find Jobs</a>
-    </div>
-  {% endif %}
-</div>
-
-<style>
-.applications-container { max-width: 800px; margin: 0 auto; }
-.page-description { color: #6b7280; margin-bottom: 32px; }
-.applications-list { display: flex; flex-direction: column; gap: 16px; }
-.application-card { }
-.application-header h3 { margin: 0 0 8px; }
-.application-header h3 a { color: #000; text-decoration: none; }
-.application-header h3 a:hover { color: #2563eb; }
-.application-meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
-.company { font-weight: 600; color: #374151; }
-.applied-date { color: #6b7280; font-size: 0.875rem; }
-.status { padding: 4px 8px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; }
-.status-pending { background: #fef3c7; color: #92400e; }
-.status-reviewing { background: #dbeafe; color: #1d4ed8; }
-.status-interviewed { background: #e0e7ff; color: #5b21b6; }
-.status-accepted { background: #dcfce7; color: #166534; }
-.status-rejected { background: #fee2e2; color: #991b1b; }
-.job-location { color: #6b7280; margin: 0 0 12px; }
-.cover-letter-section { margin-top: 12px; }
-.cover-letter-section summary { cursor: pointer; color: #2563eb; }
-.cover-letter-content { margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 6px; }
-.empty-state { text-align: center; padding: 48px 24px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.field { display: flex; flex-direction: column; }
+.field .field-help { color: #6b7280; font-size: 0.9rem; margin-top: 6px; }
+.form-actions { display: flex; gap: 12px; margin-top: 24px; }
+@media (max-width: 720px) { .form-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}

@@ -14,6 +14,19 @@
   },
   {
     "model": "accounts.user",
+    "pk": 3,
+    "fields": {
+      "username": "recruiter2",
+      "email": "recruiter2@example.com",
+      "password": "pbkdf2_sha256$720000$8wvfKuWuKOdh$lajxiDB6YlhFpOuSiClgOHUNS0vCQw6pw+W4ZMBgYFU=",
+      "is_active": true,
+      "is_staff": true,
+      "is_superuser": false,
+      "account_type": "RECRUITER"
+    }
+  },
+  {
+    "model": "accounts.user",
     "pk": 2,
     "fields": {
       "username": "seeker1",
@@ -26,55 +39,30 @@
     }
   },
   {
-    "model": "profiles.skill",
-    "pk": 1,
-    "fields": { "name": "Python" }
-  },
-  {
-    "model": "profiles.skill",
-    "pk": 2,
-    "fields": { "name": "Django" }
-  },
-  {
-    "model": "profiles.skill",
-    "pk": 3,
-    "fields": { "name": "React" }
-  },
-  {
-    "model": "profiles.skill",
+    "model": "accounts.user",
     "pk": 4,
-    "fields": { "name": "SQL" }
+    "fields": {
+      "username": "seeker2",
+      "email": "seeker2@example.com",
+      "password": "pbkdf2_sha256$720000$8wvfKuWuKOdh$lajxiDB6YlhFpOuSiClgOHUNS0vCQw6pw+W4ZMBgYFU=",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false,
+      "account_type": "JOB_SEEKER"
+    }
   },
-  {
-    "model": "profiles.skill",
-    "pk": 5,
-    "fields": { "name": "AWS" }
-  },
-  {
-    "model": "profiles.skill",
-    "pk": 6,
-    "fields": { "name": "Docker" }
-  },
-  {
-    "model": "profiles.skill",
-    "pk": 7,
-    "fields": { "name": "Figma" }
-  },
-  {
-    "model": "profiles.skill",
-    "pk": 8,
-    "fields": { "name": "Tableau" }
-  },
-  {
-    "model": "profiles.skill",
-    "pk": 9,
-    "fields": { "name": "Kubernetes" }
-  },
-  {
-    "model": "profiles.skill",
-    "pk": 10,
-    "fields": { "name": "Customer Success" }
-  },
+
+  { "model": "profiles.skill", "pk": 1,  "fields": { "name": "Python" } },
+  { "model": "profiles.skill", "pk": 2,  "fields": { "name": "Django" } },
+  { "model": "profiles.skill", "pk": 3,  "fields": { "name": "React" } },
+  { "model": "profiles.skill", "pk": 4,  "fields": { "name": "SQL" } },
+  { "model": "profiles.skill", "pk": 5,  "fields": { "name": "AWS" } },
+  { "model": "profiles.skill", "pk": 6,  "fields": { "name": "Docker" } },
+  { "model": "profiles.skill", "pk": 7,  "fields": { "name": "Figma" } },
+  { "model": "profiles.skill", "pk": 8,  "fields": { "name": "Tableau" } },
+  { "model": "profiles.skill", "pk": 9,  "fields": { "name": "Kubernetes" } },
+  { "model": "profiles.skill", "pk": 10, "fields": { "name": "Customer Success" } },
+
   {
     "model": "profiles.jobseekerprofile",
     "pk": 1,
@@ -91,6 +79,127 @@
       "updated_at": "2025-09-26T00:00:00Z"
     }
   },
+  {
+    "model": "profiles.jobseekerprofile",
+    "pk": 2,
+    "fields": {
+      "user": 4,
+      "headline": "Data Enthusiast & Frontend Learner",
+      "summary": "Early-career analyst exploring data pipelines and modern UI.",
+      "location": "Austin, TX",
+      "show_headline": true,
+      "show_location": true,
+      "show_summary": true,
+      "skills": [4, 8, 3, 1],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+
+  {
+    "model": "profiles.education",
+    "pk": 1,
+    "fields": {
+      "profile": 1,
+      "school": "State University",
+      "degree": "B.S.",
+      "field_of_study": "Computer Science",
+      "start_date": "2021-08-01",
+      "end_date": "2025-05-15",
+      "current": false,
+      "description": "Core CS curriculum with web and data electives.",
+      "show": true
+    }
+  },
+  {
+    "model": "profiles.experience",
+    "pk": 1,
+    "fields": {
+      "profile": 1,
+      "title": "Intern, Web Apps",
+      "company": "Acme Labs",
+      "start_date": "2024-06-01",
+      "end_date": "2024-08-31",
+      "current": false,
+      "description": "Built small Django views and added tests. Improved a dashboard using React.",
+      "show": true
+    }
+  },
+  {
+    "model": "profiles.link",
+    "pk": 1,
+    "fields": {
+      "profile": 1,
+      "kind": "LINKEDIN",
+      "label": "LinkedIn",
+      "url": "https://www.linkedin.com/in/seeker1",
+      "show": true
+    }
+  },
+  {
+    "model": "profiles.link",
+    "pk": 2,
+    "fields": {
+      "profile": 1,
+      "kind": "GITHUB",
+      "label": "GitHub",
+      "url": "https://github.com/seeker1",
+      "show": true
+    }
+  },
+
+  {
+    "model": "profiles.education",
+    "pk": 2,
+    "fields": {
+      "profile": 2,
+      "school": "Metro College",
+      "degree": "B.A.",
+      "field_of_study": "Data Analytics",
+      "start_date": "2020-08-01",
+      "end_date": "2024-05-15",
+      "current": false,
+      "description": "BI coursework with SQL, Tableau, and Python.",
+      "show": true
+    }
+  },
+  {
+    "model": "profiles.experience",
+    "pk": 2,
+    "fields": {
+      "profile": 2,
+      "title": "Data Fellow",
+      "company": "City Insights",
+      "start_date": "2024-09-01",
+      "end_date": null,
+      "current": true,
+      "description": "Cleaned datasets, wrote SQL, and built mini dashboards.",
+      "show": true
+    }
+  },
+  {
+    "model": "profiles.link",
+    "pk": 3,
+    "fields": {
+      "profile": 2,
+      "kind": "LINKEDIN",
+      "label": "LinkedIn",
+      "url": "https://www.linkedin.com/in/seeker2",
+      "show": true
+    }
+  },
+  {
+    "model": "profiles.link",
+    "pk": 4,
+    "fields": {
+      "profile": 2,
+      "kind": "PORTFOLIO",
+      "label": "Portfolio",
+      "url": "https://seeker2.example.com",
+      "show": true
+    }
+  },
+
   {
     "model": "jobs.job",
     "pk": 1,
@@ -195,6 +304,56 @@
     "model": "jobs.job",
     "pk": 5,
     "fields": {
+      "title": "QA Engineer",
+      "company": "Acme Corp",
+      "location": "Boston, MA",
+      "work_type": "ON_SITE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Write tests, track bugs, and help ship quality releases.",
+      "requirements": "Familiarity with test frameworks and CI.",
+      "salary_min": 60000,
+      "salary_max": 85000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 1,
+      "status": "DRAFT",
+      "required_skills": [1, 3, 4],
+      "nice_to_have_skills": [6],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 6,
+    "fields": {
+      "title": "Backend Engineer",
+      "company": "Bluebird Analytics",
+      "location": "Remote",
+      "work_type": "REMOTE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Build APIs and data services with Python.",
+      "requirements": "Django, SQL, and testing experience.",
+      "salary_min": 80000,
+      "salary_max": 120000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 1,
+      "status": "DRAFT",
+      "required_skills": [1, 2, 4],
+      "nice_to_have_skills": [6, 5],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 7,
+    "fields": {
       "title": "Customer Success Manager",
       "company": "BrightPath",
       "location": "Chicago, IL",
@@ -209,9 +368,235 @@
       "visa_sponsorship": false,
       "benefits": "Health, dental, 401(k), flexible PTO.",
       "posted_by": 1,
-      "status": "ACTIVE",
+      "status": "CLOSED",
       "required_skills": [10],
       "nice_to_have_skills": [8, 3],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 8,
+    "fields": {
+      "title": "BI Developer",
+      "company": "Northstar Labs",
+      "location": "Denver, CO",
+      "work_type": "HYBRID",
+      "latitude": null,
+      "longitude": null,
+      "description": "Design ETL jobs and build analytics dashboards.",
+      "requirements": "SQL & BI stack. Bonus for Python.",
+      "salary_min": 90000,
+      "salary_max": 130000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 1,
+      "status": "CLOSED",
+      "required_skills": [4, 8, 1],
+      "nice_to_have_skills": [5],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+
+  {
+    "model": "jobs.job",
+    "pk": 9,
+    "fields": {
+      "title": "Mobile Engineer",
+      "company": "Rocket Apps",
+      "location": "San Francisco, CA",
+      "work_type": "HYBRID",
+      "latitude": null,
+      "longitude": null,
+      "description": "Ship performant mobile features and tooling.",
+      "requirements": "React Native or similar, strong JS fundamentals.",
+      "salary_min": 115000,
+      "salary_max": 155000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 3,
+      "status": "ACTIVE",
+      "required_skills": [1, 3],
+      "nice_to_have_skills": [6, 5],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 10,
+    "fields": {
+      "title": "Platform Engineer",
+      "company": "CloudForge",
+      "location": "Austin, TX",
+      "work_type": "ON_SITE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Scale services and improve developer velocity.",
+      "requirements": "Containers, k8s, infra-as-code.",
+      "salary_min": 125000,
+      "salary_max": 170000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 3,
+      "status": "ACTIVE",
+      "required_skills": [6, 9, 5],
+      "nice_to_have_skills": [1, 4],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 11,
+    "fields": {
+      "title": "Frontend Developer",
+      "company": "Riverwave",
+      "location": "Remote",
+      "work_type": "REMOTE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Build accessible UI with modern tooling.",
+      "requirements": "Solid React and component patterns.",
+      "salary_min": 95000,
+      "salary_max": 135000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 3,
+      "status": "ACTIVE",
+      "required_skills": [3],
+      "nice_to_have_skills": [1],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 12,
+    "fields": {
+      "title": "Data Engineer",
+      "company": "DataVista",
+      "location": "New York, NY",
+      "work_type": "ON_SITE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Own pipelines, dbt jobs, and warehouse modeling.",
+      "requirements": "Strong SQL + a cloud stack (AWS preferred).",
+      "salary_min": 120000,
+      "salary_max": 165000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 3,
+      "status": "ACTIVE",
+      "required_skills": [4, 5, 6],
+      "nice_to_have_skills": [1, 9],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 13,
+    "fields": {
+      "title": "UX Researcher",
+      "company": "Echo Design",
+      "location": "Portland, OR",
+      "work_type": "HYBRID",
+      "latitude": null,
+      "longitude": null,
+      "description": "Lead discovery, testing, and insights.",
+      "requirements": "Experience running moderated and unmoderated studies.",
+      "salary_min": 90000,
+      "salary_max": 130000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 3,
+      "status": "DRAFT",
+      "required_skills": [7],
+      "nice_to_have_skills": [],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 14,
+    "fields": {
+      "title": "Security Analyst",
+      "company": "SentryWorks",
+      "location": "Washington, DC",
+      "work_type": "ON_SITE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Respond to incidents and harden systems.",
+      "requirements": "Security monitoring, cloud, and container basics.",
+      "salary_min": 110000,
+      "salary_max": 150000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 3,
+      "status": "DRAFT",
+      "required_skills": [4, 5, 6, 9],
+      "nice_to_have_skills": [],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 15,
+    "fields": {
+      "title": "Product Manager",
+      "company": "Evertrail",
+      "location": "Los Angeles, CA",
+      "work_type": "HYBRID",
+      "latitude": null,
+      "longitude": null,
+      "description": "Drive roadmap and align stakeholders.",
+      "requirements": "Experience shipping software and collaborating cross-functionally.",
+      "salary_min": 120000,
+      "salary_max": 170000,
+      "salary_currency": "USD",
+      "visa_sponsorship": false,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 3,
+      "status": "CLOSED",
+      "required_skills": [10, 3],
+      "nice_to_have_skills": [1],
+      "created_at": "2025-09-26T00:00:00Z",
+      "updated_at": "2025-09-26T00:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 16,
+    "fields": {
+      "title": "Cloud Architect",
+      "company": "Nimbus Cloud",
+      "location": "Remote",
+      "work_type": "REMOTE",
+      "latitude": null,
+      "longitude": null,
+      "description": "Lead cloud architecture and cost optimization.",
+      "requirements": "AWS, containers, and IaC.",
+      "salary_min": 150000,
+      "salary_max": 200000,
+      "salary_currency": "USD",
+      "visa_sponsorship": true,
+      "benefits": "Health, dental, 401(k), flexible PTO.",
+      "posted_by": 3,
+      "status": "CLOSED",
+      "required_skills": [5, 6, 9],
+      "nice_to_have_skills": [1, 4],
       "created_at": "2025-09-26T00:00:00Z",
       "updated_at": "2025-09-26T00:00:00Z"
     }

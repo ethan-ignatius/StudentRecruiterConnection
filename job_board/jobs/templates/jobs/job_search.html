@@ -9,7 +9,7 @@
 
 <!-- Search Form -->
 <div class="card search-card">
-  <form method="get" class="search-form">
+  <form method="get" action="{% url 'jobs:search' %}" class="search-form">
     <div class="search-row">
       <div class="search-field search-field-main">
         {{ form.q.label_tag }}
@@ -28,7 +28,7 @@
       </div>
       
       <div class="search-field">
-        <button type="submit" class="btn search-btn">Search Jobs</button>
+        <button type="submit" name="search" value="1" class="btn search-btn">Search Jobs</button>
       </div>
     </div>
     
@@ -37,43 +37,37 @@
       <summary class="filters-toggle">Advanced Filters</summary>
       <div class="filters-grid">
         <div class="field">
-          {{ form.skills.label_tag }}
-          {{ form.skills }}
-          {% if form.skills.help_text %}<div class="field-help">{{ form.skills.help_text }}</div>{% endif %}
-          {% if form.skills.errors %}
-            <ul class="errorlist">{% for error in form.skills.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-          {% endif %}
-        </div>
-        
-        <div class="field">
           {{ form.work_type.label_tag }}
           {{ form.work_type }}
-          {% if form.work_type.errors %}
-            <ul class="errorlist">{% for error in form.work_type.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-          {% endif %}
+          {% if form.work_type.errors %}<ul class="errorlist">{% for error in form.work_type.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
         </div>
-        
+
         <div class="field">
           {{ form.salary_min.label_tag }}
           {{ form.salary_min }}
-          {% if form.salary_min.errors %}
-            <ul class="errorlist">{% for error in form.salary_min.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-          {% endif %}
+          {% if form.salary_min.errors %}<ul class="errorlist">{% for error in form.salary_min.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
         </div>
-        
+
         <div class="field">
           {{ form.salary_max.label_tag }}
           {{ form.salary_max }}
-          {% if form.salary_max.errors %}
-            <ul class="errorlist">{% for error in form.salary_max.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+          {% if form.salary_max.errors %}<ul class="errorlist">{% for error in form.salary_max.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <div class="field">
+          {{ form.visa_sponsorship.label_tag }}
+          {{ form.visa_sponsorship }}
+          {% if form.visa_sponsorship.errors %}
+            <ul class="errorlist">
+              {% for error in form.visa_sponsorship.errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
           {% endif %}
         </div>
-        
-        <div class="field checkbox-field">
-          <label class="checkbox-label">
-            {{ form.visa_sponsorship }}
-            {{ form.visa_sponsorship.label }}
-          </label>
+
+        <div class="field" style="grid-column: 1 / -1;">
+          {{ form.skills.label_tag }}
+          {{ form.skills }}
+          {% if form.skills.errors %}<ul class="errorlist">{% for error in form.skills.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
         </div>
       </div>
     </details>
@@ -86,9 +80,25 @@
   </form>
 </div>
 
-<!-- Job Results -->
 {% if jobs %}
-  <div class="results-summary">
+  <!-- Pagination (top) -->
+  <div class="pagination">
+    {% if jobs.has_previous %}
+      <a href="?{% if request.GET.q %}q={{ request.GET.q }}&amp;{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&amp;{% endif %}{% if request.GET.work_type %}work_type={{ request.GET.work_type }}&amp;{% endif %}{% if request.GET.salary_min %}salary_min={{ request.GET.salary_min }}&amp;{% endif %}{% if request.GET.salary_max %}salary_max={{ request.GET.salary_max }}&amp;{% endif %}{% if request.GET.visa_sponsorship %}visa_sponsorship={{ request.GET.visa_sponsorship }}&amp;{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&amp;{% endif %}page={{ jobs.previous_page_number }}" class="btn">Previous</a>
+    {% else %}
+      <span class="btn disabled">Previous</span>
+    {% endif %}
+    
+    <span class="page-info">Page {{ jobs.number }} of {{ jobs.paginator.num_pages }}</span>
+    
+    {% if jobs.has_next %}
+      <a href="?{% if request.GET.q %}q={{ request.GET.q }}&amp;{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&amp;{% endif %}{% if request.GET.work_type %}work_type={{ request.GET.work_type }}&amp;{% endif %}{% if request.GET.salary_min %}salary_min={{ request.GET.salary_min }}&amp;{% endif %}{% if request.GET.salary_max %}salary_max={{ request.GET.salary_max }}&amp;{% endif %}{% if request.GET.visa_sponsorship %}visa_sponsorship={{ request.GET.visa_sponsorship }}&amp;{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&amp;{% endif %}page={{ jobs.next_page_number }}" class="btn">Next</a>
+    {% else %}
+      <span class="btn disabled">Next</span>
+    {% endif %}
+  </div>
+
+  <div class="results-meta">
     <p>{{ jobs.paginator.count }} job{{ jobs.paginator.count|pluralize }} found</p>
   </div>
   
@@ -107,118 +117,93 @@
         </div>
         
         <div class="job-details">
-          <p class="job-description">{{ job.description|truncatewords:30 }}</p>
-          
+          <p class="job-description">{{ job.description|truncatechars:240 }}</p>
           <div class="job-info">
             {% if job.salary_min or job.salary_max %}
-              <span class="salary">{{ job.salary_range_display }}</span>
+              <span class="salary">
+                {% if job.salary_min and job.salary_max %}
+                  {{ job.salary_currency }} {{ job.salary_min|floatformat:0 }} - {{ job.salary_max|floatformat:0 }}
+                {% elif job.salary_min %}
+                  From {{ job.salary_currency }} {{ job.salary_min|floatformat:0 }}
+                {% else %}
+                  Up to {{ job.salary_currency }} {{ job.salary_max|floatformat:0 }}
+                {% endif %}
+              </span>
             {% endif %}
-            
             {% if job.visa_sponsorship %}
-              <span class="visa-badge">Visa Sponsorship</span>
+              <span class="visa">Visa Sponsorship</span>
             {% endif %}
-            
-            <span class="posted-date">Posted {{ job.created_at|timesince }} ago</span>
           </div>
-          
-          {% if job.required_skills.all %}
-            <div class="job-skills">
-              {% for skill in job.required_skills.all|slice:":5" %}
-                <span class="skill-tag">{{ skill.name }}</span>
-              {% endfor %}
-              {% if job.required_skills.count > 5 %}
-                <span class="skill-more">+{{ job.required_skills.count|add:"-5" }} more</span>
-              {% endif %}
-            </div>
-          {% endif %}
         </div>
+        
+        <div class="job-actions">
+          <a class="btn btn-outline" href="{% url 'jobs:detail' job.pk %}">View Details</a>
+        </div>
+        {% if job.id in applied_job_ids %}<span class="applied-badge">Already Applied</span>{% endif %}
       </div>
     {% endfor %}
   </div>
-  
-<!-- Map container -->
-<div id="jobs-map" style="height:420px;border-radius:12px;margin:14px 0;"></div>
 
-<!-- Safely embed the data -->
-{{ jobs_for_map|json_script:"jobs-data" }}
+  <!-- Map -->
+  <div id="jobs-map" class="map card" style="height: 320px; margin-top: 24px;"></div>
+  {% if jobs_for_map %}{{ jobs_for_map|json_script:"jobs-for-map-data" }}{% endif %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+  document.addEventListener("DOMContentLoaded", function(){
+    var container = document.getElementById("jobs-map");
+    if (!container) return;
 
-<!-- Leaflet assets (CSS first, then JS) -->
-<link rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin="">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossorigin=""></script>
+    var data = [];
+    var el = document.getElementById("jobs-for-map-data");
+    if (el) { try { data = JSON.parse(el.textContent); } catch(e) { console.warn("Bad jobs_for_map JSON", e); } }
 
-<!-- Your map code must be in a separate script tag (not the same tag as Leaflet src) -->
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  // 1) Read the jobs array
-  const el = document.getElementById('jobs-data');
-  if (!el) { console.error('jobs-data element not found'); return; }
-  const jobs = JSON.parse(el.textContent || '[]');
+    if (!data || !data.length) {
+      container.innerHTML = '<div style="padding:12px;color:#6b7280;">No map locations available for these results.</div>';
+      return;
+    }
 
-  console.log('jobs_for_map count:', jobs.length);
-  if (!jobs.length) console.warn('No jobs with coords were passed to the template.');
+    var map = L.map("jobs-map");
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
 
-  // 2) Init map
-  const mapDiv = document.getElementById('jobs-map');
-  if (!mapDiv) { console.error('#jobs-map not found'); return; }
-
-  const map = L.map('jobs-map').setView([39.8283, -98.5795], 4);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(map);
-
-  // 3) Plot markers
-  const markers = L.layerGroup().addTo(map);
-  const bounds = L.latLngBounds();
-  let placed = 0;
-
-  jobs.forEach(j => {
-    if (j.latitude == null || j.longitude == null) return;
-    const m = L.marker([j.latitude, j.longitude]).addTo(markers);
-    m.bindPopup(`<strong>${j.title}</strong> — ${j.company}<br>${j.location}`);
-    bounds.extend([j.latitude, j.longitude]);
-    placed++;
+    var bounds = [];
+    data.forEach(function(j){
+      if (j.latitude == null || j.longitude == null) return;
+      var m = L.marker([j.latitude, j.longitude]).addTo(map);
+      var html = '<div style="min-width:180px;">'
+               + '<div style="font-weight:600;margin-bottom:4px;">' + (j.title||"") + '</div>'
+               + '<div style="color:#6b7280;margin-bottom:4px;">' + (j.company||"") + '</div>'
+               + (j.location ? '<div style="color:#6b7280;">' + j.location + '</div>' : '')
+               + '<div style="margin-top:8px;"><a href="' + j.url + '">View Job</a></div>'
+               + '</div>';
+      m.bindPopup(html);
+      bounds.push([j.latitude, j.longitude]);
+    });
+    if (bounds.length) map.fitBounds(bounds, { padding: [24, 24] });
   });
+  </script>
 
-  if (placed && bounds.isValid()) {
-    map.fitBounds(bounds, { padding: [20,20] });
-  } else {
-    console.warn('No markers placed (check jobs_for_map content).');
-  }
-});
-</script>
-
-  <!-- Pagination -->
-  {% if jobs.has_other_pages %}
-    <div class="pagination-wrapper">
-      <div class="pagination">
-        {% if jobs.has_previous %}
-          <a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.location %}&location={{ request.GET.location }}{% endif %}{% if request.GET.skills %}&skills={{ request.GET.skills }}{% endif %}{% if request.GET.work_type %}&work_type={{ request.GET.work_type }}{% endif %}{% if request.GET.salary_min %}&salary_min={{ request.GET.salary_min }}{% endif %}{% if request.GET.salary_max %}&salary_max={{ request.GET.salary_max }}{% endif %}{% if request.GET.visa_sponsorship %}&visa_sponsorship=on{% endif %}" class="page-link">« First</a>
-          <a href="?page={{ jobs.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.location %}&location={{ request.GET.location }}{% endif %}{% if request.GET.skills %}&skills={{ request.GET.skills }}{% endif %}{% if request.GET.work_type %}&work_type={{ request.GET.work_type }}{% endif %}{% if request.GET.salary_min %}&salary_min={{ request.GET.salary_min }}{% endif %}{% if request.GET.salary_max %}&salary_max={{ request.GET.salary_max }}{% endif %}{% if request.GET.visa_sponsorship %}&visa_sponsorship=on{% endif %}" class="page-link">‹ Previous</a>
-        {% endif %}
-        
-        <span class="page-info">
-          Page {{ jobs.number }} of {{ jobs.paginator.num_pages }}
-        </span>
-        
-        {% if jobs.has_next %}
-          <a href="?page={{ jobs.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.location %}&location={{ request.GET.location }}{% endif %}{% if request.GET.skills %}&skills={{ request.GET.skills }}{% endif %}{% if request.GET.work_type %}&work_type={{ request.GET.work_type }}{% endif %}{% if request.GET.salary_min %}&salary_min={{ request.GET.salary_min }}{% endif %}{% if request.GET.salary_max %}&salary_max={{ request.GET.salary_max }}{% endif %}{% if request.GET.visa_sponsorship %}&visa_sponsorship=on{% endif %}" class="page-link">Next ›</a>
-          <a href="?page={{ jobs.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.location %}&location={{ request.GET.location }}{% endif %}{% if request.GET.skills %}&skills={{ request.GET.skills }}{% endif %}{% if request.GET.work_type %}&work_type={{ request.GET.work_type }}{% endif %}{% if request.GET.salary_min %}&salary_min={{ request.GET.salary_min }}{% endif %}{% if request.GET.salary_max %}&salary_max={{ request.GET.salary_max }}{% endif %}{% if request.GET.visa_sponsorship %}&visa_sponsorship=on{% endif %}" class="page-link">Last »</a>
-        {% endif %}
-      </div>
-    </div>
-  {% endif %}
-  
+  <!-- Pagination (bottom) -->
+  <div class="pagination">
+    {% if jobs.has_previous %}
+      <a href="?{% if request.GET.q %}q={{ request.GET.q }}&amp;{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&amp;{% endif %}{% if request.GET.work_type %}work_type={{ request.GET.work_type }}&amp;{% endif %}{% if request.GET.salary_min %}salary_min={{ request.GET.salary_min }}&amp;{% endif %}{% if request.GET.salary_max %}salary_max={{ request.GET.salary_max }}&amp;{% endif %}{% if request.GET.visa_sponsorship %}visa_sponsorship={{ request.GET.visa_sponsorship }}&amp;{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&amp;{% endif %}page={{ jobs.previous_page_number }}" class="btn">Previous</a>
+    {% else %}
+      <span class="btn disabled">Previous</span>
+    {% endif %}
+    
+    <span class="page-info">Page {{ jobs.number }} of {{ jobs.paginator.num_pages }}</span>
+    
+    {% if jobs.has_next %}
+      <a href="?{% if request.GET.q %}q={{ request.GET.q }}&amp;{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&amp;{% endif %}{% if request.GET.work_type %}work_type={{ request.GET.work_type }}&amp;{% endif %}{% if request.GET.salary_min %}salary_min={{ request.GET.salary_min }}&amp;{% endif %}{% if request.GET.salary_max %}salary_max={{ request.GET.salary_max }}&amp;{% endif %}{% if request.GET.visa_sponsorship %}visa_sponsorship={{ request.GET.visa_sponsorship }}&amp;{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&amp;{% endif %}page={{ jobs.next_page_number }}" class="btn">Next</a>
+    {% else %}
+      <span class="btn disabled">Next</span>
+    {% endif %}
+  </div>
 {% else %}
   <div class="no-results">
     <div class="no-results-content">
       <h3>No jobs found</h3>
-      <p>Try adjusting your search criteria or <a href="{% url 'jobs:search' %}">browse all jobs</a>.</p>
+      <p>Try broadening your search or clearing filters.</p>
     </div>
   </div>
 {% endif %}
@@ -229,57 +214,64 @@ document.addEventListener('DOMContentLoaded', function(){
 .text-muted { color: #6b7280; }
 
 .search-card { margin-bottom: 24px; }
-.search-row { display: grid; grid-template-columns: 2fr 1fr auto; gap: 16px; margin-bottom: 16px; }
+.search-row { display: grid; grid-template-columns: 2fr 1fr auto; gap: 16px; margin-bottom: 16px; align-items: center; }
 .search-field-main { grid-column: 1; }
-.search-btn { white-space: nowrap; align-self: end; }
+.search-btn { white-space: nowrap; align-self: center; }
 
 .filters-section { margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
 .filters-toggle { cursor: pointer; font-weight: 600; color: #000; }
-.filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px; }
-.checkbox-field { display: flex; align-items: center; }
-.checkbox-label { display: flex; align-items: center; gap: 8px; font-weight: normal; }
+.filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
 
-.active-filters { margin-top: 12px; }
-.clear-filters { color: #dc2626; text-decoration: none; }
-.clear-filters:hover { text-decoration: underline; }
-
-.results-summary { margin-bottom: 16px; color: #6b7280; }
-
-.job-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px; }
-.job-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; transition: box-shadow 0.2s; }
-.job-card:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-
-.job-header h3 { margin: 0 0 8px; }
-.job-header h3 a { color: #000; text-decoration: none; font-size: 1.25rem; }
-.job-header h3 a:hover { color: #2563eb; }
-
-.job-meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
-.company { font-weight: 600; color: #374151; }
+.job-list { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.job-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; position: relative; }
+.job-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.job-header h3 { margin: 0; }
+.job-meta { color: #6b7280; display: flex; align-items: center; gap: 12px; }
 .location { color: #6b7280; }
-.work-type { background: #f3f4f6; color: #374151; padding: 4px 8px; border-radius: 6px; font-size: 0.875rem; }
-.work-type-remote { background: #dcfce7; color: #166534; }
-.work-type-hybrid { background: #fef3c7; color: #92400e; }
+.work-type { background: #eef2ff; color: #1e3a8a; padding: 4px 12px; border-radius: 9999px; font-weight: 600; font-size: 0.85rem; }
 
-.job-description { color: #4b5563; margin-bottom: 12px; line-height: 1.5; }
+.job-details { margin-top: 8px; }
+.job-description { color: #374151; margin-bottom: 8px; }
+.job-info { display: flex; align-items: center; gap: 12px; color: #374151; }
+.salary { font-weight: 600; }
+.visa { background: #ecfdf5; color: #065f46; padding: 4px 8px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; }
 
-.job-info { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
-.salary { color: #059669; font-weight: 600; }
-.visa-badge { background: #dbeafe; color: #1d4ed8; padding: 4px 8px; border-radius: 6px; font-size: 0.875rem; }
-.posted-date { color: #6b7280; font-size: 0.875rem; }
+.job-actions { margin-top: 12px; display: flex; gap: 8px; }
 
-.job-skills { display: flex; flex-wrap: wrap; gap: 6px; }
-.skill-tag { background: #e5e7eb; color: #374151; padding: 4px 8px; border-radius: 6px; font-size: 0.875rem; }
-.skill-more { color: #6b7280; font-size: 0.875rem; }
+.pagination { display: flex; align-items: center; justify-content: space-between; margin: 16px 0; }
 
-.pagination-wrapper { display: flex; justify-content: center; }
-.pagination { display: flex; align-items: center; gap: 8px; }
-.page-link { color: #2563eb; text-decoration: none; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; }
-.page-link:hover { background: #f3f4f6; }
+/* Button palette for this page (match global palette) */
+.btn {
+  background: #2563eb;               /* blue, not black */
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  border: 1px solid #2563eb;         /* ensure outline matches on hover borders */
+}
+.btn:hover { opacity: 0.9; }
+
+.btn-outline {
+  background: transparent;
+  color: #2563eb;                    /* blue text */
+  border: 1px solid #2563eb;         /* blue border */
+}
+
+.btn.disabled { opacity: 0.5; pointer-events: none; }
+
+
 .page-info { padding: 8px 12px; color: #6b7280; }
 
 .no-results { display: flex; justify-content: center; padding: 48px 0; }
 .no-results-content { text-align: center; }
 .no-results h3 { color: #374151; margin-bottom: 8px; }
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  align-items: start; /* added */
+}
 
 @media (max-width: 768px) {
   .search-row { grid-template-columns: 1fr; }
@@ -287,5 +279,6 @@ document.addEventListener('DOMContentLoaded', function(){
   .job-meta { flex-direction: column; align-items: flex-start; gap: 8px; }
   .job-info { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
+.applied-badge { position: absolute; right: 12px; bottom: 12px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; padding: 4px 8px; font-weight: 600; font-size: 0.8rem; color: #374151; }
 </style>
 {% endblock %}

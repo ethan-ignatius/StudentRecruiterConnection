@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}My Job Postings{% endblock %}
+{% block content %}
+<div class="jobs-container">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+    <div>
+      <h1>My Job Postings</h1>
+      <p class="page-description">Create, edit or close job postings. Applications remain visible even after a job is closed.</p>
+    </div>
+    <a href="{% url 'jobs:post' %}" class="btn">Post a Job</a>
+  </div>
+
+  {% if jobs %}
+    {% for job in jobs %}
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;">
+          <div style="flex:1;">
+            <h3 style="margin:0 0 6px;">
+              <a href="{% url 'jobs:detail' job.pk %}" style="text-decoration:none;color:inherit;">{{ job.title }}</a>
+            </h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;color:#6b7280;font-size:0.95rem;">
+              <span style="font-weight:600;color:#374151;">{{ job.company|default:"Company" }}</span>
+              {% if job.location %}<span>{{ job.location }}</span>{% endif %}
+              <span>Posted {{ job.created_at|date:"M j, Y" }}</span>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div class="status-badge status-{{ job.status|lower }}" style="display:inline-flex;align-items:center;padding:6px 10px;border-radius:20px;font-weight:600;">
+              {{ job.get_status_display }}
+            </div>
+            <div style="margin-top:8px;color:#6b7280;font-size:0.9rem;">
+              {{ job.applications.count }} application{{ job.applications.count|pluralize }}
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+          <a class="btn btn-outline" href="{% url 'jobs:detail' job.pk %}">View</a>
+          <a class="btn btn-outline" href="{% url 'jobs:edit' job.pk %}">Edit</a>
+          <a class="btn btn-outline" href="{% url 'jobs:applications' job.pk %}">Applications</a>
+
+          {% if job.status == job.Status.ACTIVE %}
+            <form method="post" action="{% url 'jobs:close' job.pk %}" style="display:inline;">{% csrf_token %}
+              <a href="#" class="btn btn-outline" onclick="this.closest('form').submit(); return false;">Close Job</a>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'jobs:reopen' job.pk %}" style="display:inline;">{% csrf_token %}
+              <a href="#" class="btn btn-outline" onclick="this.closest('form').submit(); return false;">
+                {% if job.status == job.Status.DRAFT %}Open{% else %}Reopen{% endif %}
+              </a>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+    
+    <div class="pagination-container" style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:16px;">
+      {% if jobs.has_previous %}
+        <a class="btn pager-btn" href="?page={{ jobs.previous_page_number }}">Prev</a>
+      {% else %}
+        <a class="btn pager-btn is-disabled" aria-disabled="true" tabindex="-1">Prev</a>
+      {% endif %}
+
+      <span class="muted">Page {{ jobs.number }} of {{ jobs.paginator.num_pages }}</span>
+
+      {% if jobs.has_next %}
+        <a class="btn pager-btn" href="?page={{ jobs.next_page_number }}">Next</a>
+      {% else %}
+        <a class="btn pager-btn is-disabled" aria-disabled="true" tabindex="-1">Next</a>
+      {% endif %}
+    </div>
+
+  {% else %}
+    <div class="card">
+      <p>You haven't posted any jobs yet.</p>
+      <a href="{% url 'jobs:post' %}" class="btn" style="margin-top:8px;">Post your first job</a>
+    </div>
+  {% endif %}
+</div>
+<style>
+.status-badge.status-active { background:#dcfce7; color:#166534; }
+.status-badge.status-closed { background:#fee2e2; color:#991b1b; }
+.status-badge.status-draft { background:#e5e7eb; color:#374151; }
+.page-description { color:#6b7280; }
+.pagination-container .pager-btn {
+  display: inline-flex;      /* ensures width applies to <a> */
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 80px;              /* identical width for both */
+  box-sizing: border-box;    /* include padding/border in width */
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pagination-container .pager-btn.is-disabled {
+  pointer-events: none;
+  opacity: 0.6;              /* matches typical disabled look */
+}
+</style>
+{% endblock %}

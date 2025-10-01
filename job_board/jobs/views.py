@@ -1,396 +1,353 @@
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.http import JsonResponse, Http404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect, render
-from django.http import Http404, JsonResponse
-from django.views.decorators.http import require_POST
-from django.db import transaction
-
-from accounts.models import User
-from profiles.models import Skill
 from django.urls import reverse
-from django.conf import settings
 from .models import Job, JobApplication, ApplicationStatusChange
+from django.db.models import Case, When, Value, IntegerField
 from .forms import JobSearchForm, JobForm, JobApplicationForm, QuickApplicationForm, ApplicationStatusForm
+from django.db.models import Prefetch
 
+# ------------------------------------------------------------
+# Search / discovery
+# ------------------------------------------------------------
 def job_search(request):
-    """Job search view with filtering."""
     form = JobSearchForm(request.GET)
-    jobs = Job.objects.filter(status=Job.Status.ACTIVE).select_related('posted_by')
-    
+    jobs_qs = Job.objects.filter(status=Job.Status.ACTIVE).select_related('posted_by')
+
     if form.is_valid():
-        # Text search in title, company, description
         q = form.cleaned_data.get('q')
         if q:
-            jobs = jobs.filter(
+            jobs_qs = jobs_qs.filter(
                 Q(title__icontains=q) |
                 Q(company__icontains=q) |
                 Q(description__icontains=q)
             )
-        
-        # Location filter
+
         location = form.cleaned_data.get('location')
         if location:
-            jobs = jobs.filter(location__icontains=location)
-        
-        # Work type filter
+            jobs_qs = jobs_qs.filter(location__icontains=location)
+
         work_type = form.cleaned_data.get('work_type')
         if work_type:
-            jobs = jobs.filter(work_type=work_type)
-        
-        # Salary range filters
-        salary_min = form.cleaned_data.get('salary_min')
-        salary_max = form.cleaned_data.get('salary_max')
-        
-        if salary_min:
-            jobs = jobs.filter(
-                Q(salary_max__gte=salary_min) | Q(salary_max__isnull=True)
-            )
-        
-        if salary_max:
-            jobs = jobs.filter(
-                Q(salary_min__lte=salary_max) | Q(salary_min__isnull=True)
-            )
-        
-        # Visa sponsorship filter
-        if form.cleaned_data.get('visa_sponsorship'):
-            jobs = jobs.filter(visa_sponsorship=True)
-        
-        # Skills filter
-        skill_names = form.cleaned_data.get('skills', [])
-        if skill_names:
-            # Find jobs that have any of the specified skills as required or nice-to-have
-            skill_objs = Skill.objects.filter(name__in=skill_names)
-            jobs = jobs.filter(
-                Q(required_skills__in=skill_objs) | 
-                Q(nice_to_have_skills__in=skill_objs)
-            ).distinct()
-    
-    # Pagination
-    paginator = Paginator(jobs, 10)  # Show 10 jobs per page
+            jobs_qs = jobs_qs.filter(work_type=work_type)
+
+        min_salary = form.cleaned_data.get('min_salary')
+        if min_salary not in (None, ""):
+            jobs_qs = jobs_qs.filter(salary_min__gte=min_salary)
+
+        max_salary = form.cleaned_data.get('max_salary')
+        if max_salary not in (None, ""):
+            jobs_qs = jobs_qs.filter(Q(salary_max__lte=max_salary) | Q(salary_max__isnull=True))
+
+        visa = form.cleaned_data.get('visa_sponsorship')
+        if visa == 'YES':
+            jobs_qs = jobs_qs.filter(visa_sponsorship=True)
+        elif visa == 'NO':
+            jobs_qs = jobs_qs.filter(visa_sponsorship=False)
+
+        skills = form.cleaned_data.get('skills')
+        if skills:
+            for skill in skills:
+                jobs_qs = jobs_qs.filter(
+                    Q(required_skills__name__iexact=skill) |
+                    Q(nice_to_have_skills__name__iexact=skill)
+                ).distinct()
+
+    jobs_qs = jobs_qs.order_by('-created_at')
+
+    paginator = Paginator(jobs_qs, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    map_queryset = jobs
-
     jobs_for_map = [
-    {
-        "id": j.id,
-        "title": j.title,
-        "company": j.company,
-        "location": j.location or "",
-        "url": reverse("jobs:detail", args=[j.id]),
-        "latitude": j.latitude,
-        "longitude": j.longitude,
-    }
-    for j in map_queryset
-    if j.latitude is not None and j.longitude is not None
-]
-    
+        {
+            "id": j.id,
+            "title": j.title,
+            "company": j.company,
+            "location": j.location or "",
+            "url": reverse("jobs:detail", args=[j.id]),
+            "latitude": j.latitude,
+            "longitude": j.longitude,
+        }
+        for j in jobs_qs if j.latitude is not None and j.longitude is not None
+    ]
+
+    # Mark which jobs on the current page are already applied by this user
+    applied_job_ids = set()
+    if request.user.is_authenticated and hasattr(request.user, 'is_job_seeker') and request.user.is_job_seeker():
+        visible_ids = [j.id for j in page_obj.object_list]
+        applied_job_ids = set(
+            JobApplication.objects
+            .filter(applicant=request.user, job_id__in=visible_ids)
+            .values_list('job_id', flat=True)
+        )
+
     context = {
-        'form': form,
-        'jobs': page_obj,
-        'total_count': paginator.count,
-        'has_filters': any(request.GET.values()),
+        "form": form,
+        "jobs": page_obj,
+        "total_count": paginator.count,
+        "has_filters": any(v for k, v in request.GET.items() if k not in ("page", "search") and v),
         "jobs_for_map": jobs_for_map,
+        "applied_job_ids": applied_job_ids,
     }
-    return render(request, 'jobs/job_search.html', context)
+    return render(request, "jobs/job_search.html", context)
 
 
+# ------------------------------------------------------------
+# Detail + apply
+# ------------------------------------------------------------
+@login_required
 def job_detail(request, pk):
-    """Job detail view with quick apply option."""
-    job = get_object_or_404(Job, pk=pk, status=Job.Status.ACTIVE)
-    
-    # Check if current user has already applied
+    job = get_object_or_404(Job, pk=pk)
+
+    can_apply = (
+        job.status == Job.Status.ACTIVE
+        and request.user.is_authenticated
+        and request.user.is_job_seeker()
+        and job.posted_by_id != request.user.id
+        and not JobApplication.objects.filter(job=job, applicant=request.user).exists()
+    )
+
     user_applied = False
     user_application = None
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and request.user.is_job_seeker():
         try:
             user_application = JobApplication.objects.get(job=job, applicant=request.user)
             user_applied = True
         except JobApplication.DoesNotExist:
             pass
-    
-    can_apply = (
-        request.user.is_authenticated and 
-        request.user.is_job_seeker() and 
-        not user_applied and
-        job.posted_by != request.user
-    )
-    
-    # Initialize quick application form if user can apply
-    quick_form = None
-    if can_apply:
-        quick_form = QuickApplicationForm(user=request.user, job=job)
-    
-    context = {
+
+    quick_form = QuickApplicationForm(user=request.user, job=job) if can_apply else None
+    return render(request, 'jobs/job_detail.html', {
         'job': job,
+        'can_apply': can_apply,
         'user_applied': user_applied,
         'user_application': user_application,
-        'can_apply': can_apply,
         'quick_form': quick_form,
-    }
-    
-    return render(request, 'jobs/job_detail.html', context)
+    })
 
 
 @login_required
 @require_POST
 def quick_apply(request, pk):
-    """One-click application with optional tailored note."""
     job = get_object_or_404(Job, pk=pk, status=Job.Status.ACTIVE)
-    
-    # Check permissions
+
     if not request.user.is_job_seeker():
-        return JsonResponse({
-            'success': False, 
-            'error': 'Only job seekers can apply for jobs.'
-        })
-    
-    if job.posted_by == request.user:
-        return JsonResponse({
-            'success': False, 
-            'error': 'You cannot apply to your own job posting.'
-        })
-    
-    # Check if already applied
+        return JsonResponse({'success': False, 'error': 'Only job seekers can apply.'}, status=403)
+    if job.posted_by_id == request.user.id:
+        return JsonResponse({'success': False, 'error': 'You cannot apply to your own job.'}, status=400)
     if JobApplication.objects.filter(job=job, applicant=request.user).exists():
-        return JsonResponse({
-            'success': False, 
-            'error': 'You have already applied for this job.'
-        })
-    
+        return JsonResponse({'success': False, 'error': 'You have already applied to this job.'}, status=400)
+
     form = QuickApplicationForm(request.POST, user=request.user, job=job)
-    if form.is_valid():
-        # Create application
-        application = JobApplication.objects.create(
-            job=job,
-            applicant=request.user,
-            cover_letter=form.cleaned_data.get('tailored_note', ''),
-            status=JobApplication.Status.APPLIED
-        )
-        
-        # Log initial status
-        ApplicationStatusChange.objects.create(
-            application=application,
-            old_status='',
-            new_status=JobApplication.Status.APPLIED,
-            changed_by=request.user,
-            notes='Application submitted'
-        )
-        
-        return JsonResponse({
-            'success': True, 
-            'message': 'Application submitted successfully!',
-            'redirect_url': f'/jobs/{job.pk}/'
-        })
-    
+    if not form.is_valid():
+        return JsonResponse({'success': False, 'error': 'Please provide valid information.'}, status=400)
+
+    application = JobApplication.objects.create(
+        job=job,
+        applicant=request.user,
+        cover_letter=form.cleaned_data.get('tailored_note', '').strip() or None,
+    )
+
+    # Record submission; avoid NULL for old_status
+    ApplicationStatusChange.objects.create(
+        application=application,
+        old_status=application.status,          # first row: same -> same
+        new_status=application.status,
+        changed_by=request.user,                # ← REQUIRED
+        notes='Application submitted via Quick Apply'
+    )
+
     return JsonResponse({
-        'success': False,
-        'error': 'Please check your input and try again.'
+        'success': True,
+        'message': 'Application submitted successfully.',
+        'redirect_url': reverse('jobs:application_detail', args=[application.pk])
     })
 
-
-@login_required
-def apply_for_job(request, pk):
-    """Full application form for detailed applications."""
-    job = get_object_or_404(Job, pk=pk, status=Job.Status.ACTIVE)
-    
-    # Check permissions
-    if not request.user.is_job_seeker():
-        messages.error(request, "Only job seekers can apply for jobs.")
-        return redirect('jobs:detail', pk=pk)
-    
-    if job.posted_by == request.user:
-        messages.error(request, "You cannot apply to your own job posting.")
-        return redirect('jobs:detail', pk=pk)
-    
-    # Check if already applied
-    if JobApplication.objects.filter(job=job, applicant=request.user).exists():
-        messages.warning(request, "You have already applied for this job.")
-        return redirect('jobs:detail', pk=pk)
-    
-    if request.method == 'POST':
-        form = JobApplicationForm(request.POST)
-        if form.is_valid():
-            with transaction.atomic():
-                application = form.save(commit=False)
-                application.job = job
-                application.applicant = request.user
-                application.status = JobApplication.Status.APPLIED
-                application.save()
-                
-                # Log initial status
-                ApplicationStatusChange.objects.create(
-                    application=application,
-                    old_status='',
-                    new_status=JobApplication.Status.APPLIED,
-                    changed_by=request.user,
-                    notes='Application submitted with cover letter'
-                )
-            
-            messages.success(request, "Your application has been submitted successfully!")
-            return redirect('jobs:detail', pk=pk)
-    else:
-        form = JobApplicationForm()
-    
-    context = {
-        'form': form,
-        'job': job
-    }
-    
-    return render(request, 'jobs/apply_for_job.html', context)
-
-
+# ------------------------------------------------------------
+# Recruiter / management (unchanged)
+# ------------------------------------------------------------
 @login_required
 def post_job(request):
-    """Post a new job (recruiters only)."""
     if not request.user.is_recruiter():
-        messages.error(request, "Only recruiters can post jobs.")
-        return redirect('jobs:search')
-    
+        raise Http404("Job not found")
+
     if request.method == 'POST':
         form = JobForm(request.POST)
         if form.is_valid():
             job = form.save(commit=False)
             job.posted_by = request.user
             job.save()
-            form.save()  # Save many-to-many relationships
-            
-            messages.success(request, "Job posted successfully!")
+            form.save_m2m()
+            messages.success(request, "Job posted successfully.")
             return redirect('jobs:detail', pk=job.pk)
     else:
         form = JobForm()
-    
-    return render(request, 'jobs/post_job.html', {'form': form})
+    return render(request, 'jobs/post_jobs.html', {'form': form})
 
 
 @login_required
 def my_jobs(request):
-    """View jobs posted by the current user (recruiters) or applied to (job seekers)."""
-    if request.user.is_recruiter():
-        jobs = Job.objects.filter(posted_by=request.user).order_by('-created_at')
-        template = 'jobs/my_posted_jobs.html'
-        context = {'jobs': jobs}
-    else:
-        applications = JobApplication.objects.filter(
-            applicant=request.user
-        ).select_related('job', 'job__posted_by').order_by('-applied_at')
-        
-        # Group applications by status for better organization
-        status_groups = {}
-        for app in applications:
-            status = app.get_status_display()
-            if status not in status_groups:
-                status_groups[status] = []
-            status_groups[status].append(app)
-        
-        template = 'jobs/my_applications.html'
-        context = {
-            'applications': applications,
-            'status_groups': status_groups
-        }
-    
-    return render(request, template, context)
+    # Order: status (Active, Draft, Closed) then title A→Z
+    status_order = Case(
+        When(status=Job.Status.ACTIVE, then=Value(0)),
+        When(status=Job.Status.DRAFT, then=Value(1)),
+        When(status=Job.Status.CLOSED, then=Value(2)),
+        default=Value(3),
+        output_field=IntegerField(),
+    )
 
+    qs = (
+        Job.objects
+        .filter(posted_by=request.user)
+        .annotate(_status_order=status_order)
+        .order_by('_status_order', 'title')
+    )
+
+    # 5 per page (same page size as seeker search)
+    paginator = Paginator(qs, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Keep existing templates working by exposing both `jobs` and `page_obj`
+    return render(request, 'jobs/my_posted_jobs.html', {
+        'jobs': page_obj,        # iterable page for existing loops
+        'page_obj': page_obj,    # if template wants explicit page object
+        'paginator': paginator,  # optional
+    })
+
+
+@login_required
+# job_board/jobs/views.py (function replaced)
+def job_applications(request, pk):
+    job = get_object_or_404(Job, pk=pk)
+    if job.posted_by != request.user:
+        raise Http404("Job not found")
+
+    applications = (
+        JobApplication.objects
+        .filter(job=job)
+        .select_related('applicant', 'applicant__profile')
+        .order_by('-applied_at')
+    )
+
+    # Stable status ordering
+    status_order = [
+        JobApplication.Status.APPLIED,
+        JobApplication.Status.REVIEWING,
+        JobApplication.Status.INTERVIEW,
+        JobApplication.Status.OFFER,
+        JobApplication.Status.ACCEPTED,
+        JobApplication.Status.REJECTED,
+        JobApplication.Status.WITHDRAWN,
+    ]
+    status_groups = {status: [] for status in status_order}
+    for app in applications:
+        status_groups.setdefault(app.status, []).append(app)
+
+    context = {
+        'job': job,
+        'status_groups': status_groups,
+        'total_applications': applications.count(),
+        'status_form': ApplicationStatusForm(),
+    }
+    return render(request, 'jobs/job_applications.html', context)
 
 @login_required
 def application_detail(request, pk):
-    """Detailed view of a specific application with status history."""
-    application = get_object_or_404(JobApplication, pk=pk)
-    
-    # Check permissions - only applicant or job poster can view
-    if application.applicant != request.user and application.job.posted_by != request.user:
-        raise Http404("Application not found")
-    
-    # Get status change history
-    status_history = application.status_changes.all()
-    
-    # Status update form for recruiters
-    status_form = None
-    if request.user == application.job.posted_by and request.method == 'POST':
-        status_form = ApplicationStatusForm(request.POST, instance=application)
-        if status_form.is_valid():
-            old_status = application.status
-            new_status = status_form.cleaned_data['status']
-            
-            if old_status != new_status:
-                with transaction.atomic():
-                    status_form.save()
-                    
-                    # Log status change
-                    ApplicationStatusChange.objects.create(
-                        application=application,
-                        old_status=old_status,
-                        new_status=new_status,
-                        changed_by=request.user,
-                        notes=status_form.cleaned_data.get('notes', '')
-                    )
-                
-                messages.success(request, f"Application status updated to {application.get_status_display()}")
-                return redirect('jobs:application_detail', pk=pk)
-    elif request.user == application.job.posted_by:
-        status_form = ApplicationStatusForm(instance=application)
-    
-    context = {
-        'application': application,
-        'status_history': status_history,
-        'status_form': status_form,
-        'is_recruiter': request.user == application.job.posted_by,
-        'is_applicant': request.user == application.applicant,
-    }
-    
-    return render(request, 'jobs/application_detail.html', context)
+    from django.db.models import Prefetch  # local import to keep other files untouched
 
+    # Fetch application + applicant profile + related info
+    application = (
+        JobApplication.objects
+        .select_related('job', 'applicant', 'applicant__profile')
+        .prefetch_related(
+            Prefetch('applicant__profile__experiences'),
+            Prefetch('applicant__profile__educations'),
+            Prefetch('applicant__profile__links'),
+        )
+        .get(pk=pk)
+    )
+
+    # Permission: applicant themselves OR the recruiter who owns the job
+    if not (application.applicant == request.user or application.job.posted_by == request.user):
+        raise Http404("Application not found")
+
+    # Build the status form (only recruiters can submit changes)
+    if request.method == 'POST' and request.user == application.job.posted_by:
+        form = ApplicationStatusForm(request.POST, instance=application)
+        if form.is_valid():
+            old_status = application.status
+            application = form.save()
+            ApplicationStatusChange.objects.create(
+                application=application,
+                old_status=old_status,
+                new_status=application.status,
+                changed_by=request.user,
+                notes='Status updated by recruiter'
+            )
+            messages.success(request, "Application status updated.")
+            return redirect('jobs:application_detail', pk=application.pk)
+    else:
+        form = ApplicationStatusForm(instance=application)
+
+    # History unchanged
+    history = ApplicationStatusChange.objects.filter(application=application).order_by('changed_at')
+
+    # IMPORTANT: pass the same context the Seeker profile view uses
+    return render(request, 'jobs/application_detail.html', {
+        'application': application,
+        'form': form,  # now always defined
+        'history': history,
+        # Keep the original variable for compatibility with any existing template references
+        'applicant_profile': getattr(application.applicant, 'profile', None),
+        # Provide the exact context used by Seeker profile
+        'profile': getattr(application.applicant, 'profile', None),
+        'experiences_qs': getattr(application.applicant, 'profile', None).experiences.filter(show=True) if getattr(application.applicant, 'profile', None) else [],
+        'educations_qs': getattr(application.applicant, 'profile', None).educations.filter(show=True) if getattr(application.applicant, 'profile', None) else [],
+        'links_qs': getattr(application.applicant, 'profile', None).links.filter(show=True) if getattr(application.applicant, 'profile', None) else [],
+    })
 
 @login_required
 def edit_job(request, pk):
-    """Edit a job posting."""
     job = get_object_or_404(Job, pk=pk)
-    
-    # Check permissions
     if job.posted_by != request.user:
         raise Http404("Job not found")
-    
+
     if request.method == 'POST':
         form = JobForm(request.POST, instance=job)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Job updated successfully!")
+            job = form.save()
+            messages.success(request, "Job updated successfully.")
             return redirect('jobs:detail', pk=job.pk)
     else:
         form = JobForm(instance=job)
-    
-    return render(request, 'jobs/edit_job.html', {'form': form, 'job': job})
+    return render(request, 'jobs/post_jobs.html', {'form': form})
 
 
 @login_required
-def job_applications(request, pk):
-    """View applications for a specific job (recruiters only)."""
+def close_job(request, pk):
     job = get_object_or_404(Job, pk=pk)
-    
-    # Check permissions
     if job.posted_by != request.user:
         raise Http404("Job not found")
-    
-    applications = job.applications.select_related(
-        'applicant', 'applicant__profile'
-    ).order_by('-applied_at')
-    
-    # Group applications by status
-    status_groups = {}
-    for app in applications:
-        status = app.get_status_display()
-        if status not in status_groups:
-            status_groups[status] = []
-        status_groups[status].append(app)
-    
-    context = {
-        'job': job,
-        'applications': applications,
-        'status_groups': status_groups,
-        'total_applications': applications.count()
-    }
-    
-    return render(request, 'jobs/job_applications.html', context)
+    if request.method == 'POST':
+        job.status = Job.Status.CLOSED
+        job.save(update_fields=['status'])
+        messages.success(request, "Job closed. It will no longer be visible to job seekers.")
+    return redirect('jobs:my_jobs')
+
+
+@login_required
+def reopen_job(request, pk):
+    job = get_object_or_404(Job, pk=pk)
+    if job.posted_by != request.user:
+        raise Http404("Job not found")
+    if request.method == 'POST':
+        job.status = Job.Status.ACTIVE
+        job.save(update_fields=['status'])
+        messages.success(request, "Job reopened and visible to job seekers.")
+    return redirect('jobs:my_jobs')

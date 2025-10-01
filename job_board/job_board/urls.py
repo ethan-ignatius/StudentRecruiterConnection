@@ -1,30 +1,16 @@
-"""
-URL configuration for job_board project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-
+# job_board/job_board/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from . import views
+from accounts.views import CustomLoginView  # ⬅️ added
 
 urlpatterns = [
-    path("", views.home, name="home"),  # <-- new homepage at "/"
+    path("login/", CustomLoginView.as_view(), name="login"),  # ⬅️ added
+    path("", views.home, name="home"),
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("profiles/", include(("profiles.urls", "profiles"), namespace="profiles")),
-    path("jobs/", include(("jobs.urls", "jobs"), namespace="jobs")),  # <-- Added jobs URLs
-    path("", include("django.contrib.auth.urls")),  # /login, /logout, etc.
+    path("jobs/", include(("jobs.urls", "jobs"), namespace="jobs")),
+    path("", include("django.contrib.auth.urls")),
     path("recommended/", include('recommended.urls')),
 ]

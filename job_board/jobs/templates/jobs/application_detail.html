@@ -2,131 +2,11 @@
 {% block title %}Application: {{ application.job.title }}{% endblock %}
 {% block content %}
 <div class="application-detail-container" style="max-width: 800px; margin: 0 auto;">
-  
-  <!-- Application Header -->
-  <div class="card" style="margin-bottom: 24px;">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-      <div>
-        <h1 style="margin: 0 0 8px;">{{ application.job.title }}</h1>
-        <p style="margin: 0; color: #6b7280;">
-          {{ application.job.company }} • Applied {{ application.applied_at|date:"M j, Y g:i A" }}
-        </p>
-      </div>
-      <div style="text-align: right;">
-        <div class="status-badge status-{{ application.status_display_class }}" style="display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: 600; margin-bottom: 8px;">
-          {{ application.get_status_display }}
-        </div>
-        <div style="margin-top: 8px;">
-          <a href="{% url 'jobs:detail' application.job.pk %}" class="btn btn-outline">View Job</a>
-        </div>
-      </div>
-    </div>
 
-    <!-- Status Progress Timeline -->
-    <div class="status-timeline" style="margin: 24px 0;">
-      <h3 style="margin: 0 0 16px; color: #111827;">Application Progress</h3>
-      <div style="position: relative; padding: 20px 0;">
-        <div class="timeline-line" style="position: absolute; top: 30px; left: 0; right: 0; height: 2px; background: #e5e7eb;"></div>
-        <div class="timeline-progress" style="position: absolute; top: 30px; left: 0; height: 2px; background: #2563eb; width: {{ application.get_status_progress }}%; transition: width 0.5s ease;"></div>
-        
-        <div style="display: flex; justify-content: space-between; position: relative;">
-          {% with current_status=application.status %}
-            <div class="timeline-step {% if current_status == 'APPLIED' or current_status == 'REVIEWING' or current_status == 'INTERVIEW' or current_status == 'OFFER' or current_status == 'ACCEPTED' %}active{% endif %}" style="text-align: center;">
-              <div class="step-circle" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #e5e7eb; background: white; position: relative; margin: 0 auto 8px;"></div>
-              <div class="step-label" style="font-size: 0.8rem; color: #6b7280;">Applied</div>
-            </div>
-            <div class="timeline-step {% if current_status == 'REVIEWING' or current_status == 'INTERVIEW' or current_status == 'OFFER' or current_status == 'ACCEPTED' %}active{% endif %}" style="text-align: center;">
-              <div class="step-circle" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #e5e7eb; background: white; position: relative; margin: 0 auto 8px;"></div>
-              <div class="step-label" style="font-size: 0.8rem; color: #6b7280;">Review</div>
-            </div>
-            <div class="timeline-step {% if current_status == 'INTERVIEW' or current_status == 'OFFER' or current_status == 'ACCEPTED' %}active{% endif %}" style="text-align: center;">
-              <div class="step-circle" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #e5e7eb; background: white; position: relative; margin: 0 auto 8px;"></div>
-              <div class="step-label" style="font-size: 0.8rem; color: #6b7280;">Interview</div>
-            </div>
-            <div class="timeline-step {% if current_status == 'OFFER' or current_status == 'ACCEPTED' %}active{% endif %}" style="text-align: center;">
-              <div class="step-circle" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #e5e7eb; background: white; position: relative; margin: 0 auto 8px;"></div>
-              <div class="step-label" style="font-size: 0.8rem; color: #6b7280;">Offer</div>
-            </div>
-            <div class="timeline-step {% if current_status == 'ACCEPTED' %}active{% endif %}" style="text-align: center;">
-              <div class="step-circle" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #e5e7eb; background: white; position: relative; margin: 0 auto 8px;"></div>
-              <div class="step-label" style="font-size: 0.8rem; color: #6b7280;">Hired</div>
-            </div>
-          {% endwith %}
-        </div>
-      </div>
-    </div>
-
-    {% if application.cover_letter %}
-      <div style="margin: 24px 0;">
-        <h3 style="margin: 0 0 12px; color: #111827;">My Application Note</h3>
-        <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #2563eb;">
-          {{ application.cover_letter|linebreaks }}
-        </div>
-      </div>
-    {% endif %}
-
-    <!-- Status Update Form for Recruiters -->
-    {% if is_recruiter and status_form %}
-      <div style="margin: 24px 0; padding: 20px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px;">
-        <h3 style="margin: 0 0 16px; color: #111827;">Update Application Status</h3>
-        <form method="post">
-          {% csrf_token %}
-          <div class="form-grid" style="grid-template-columns: 2fr 1fr; gap: 16px; align-items: end;">
-            <div class="field">
-              {{ status_form.status.label_tag }}
-              {{ status_form.status }}
-            </div>
-            <div>
-              <button type="submit" class="btn">Update Status</button>
-            </div>
-          </div>
-          <div class="field" style="margin-top: 12px;">
-            {{ status_form.notes.label_tag }}
-            {{ status_form.notes }}
-          </div>
-        </form>
-      </div>
-    {% endif %}
-  </div>
-
-  <!-- Status History -->
-  {% if status_history %}
-  <div class="card" style="margin-bottom: 24px;">
-    <h2 style="margin: 0 0 20px;">Status History</h2>
-    <div class="status-history">
-      {% for change in status_history %}
-        <div class="history-item" style="display: flex; padding: 16px 0; {% if not forloop.last %}border-bottom: 1px solid #f3f4f6;{% endif %}">
-          <div style="flex-shrink: 0; margin-right: 16px;">
-            <div class="status-badge status-{{ change.new_status|lower }}" style="padding: 4px 12px; border-radius: 12px; font-size: 0.85rem;">
-              {{ change.get_new_status_display }}
-            </div>
-          </div>
-          <div style="flex: 1;">
-            <div style="font-weight: 500; margin-bottom: 4px; color: #111827;">
-              {% if change.old_status %}
-                Status changed from {{ change.get_old_status_display }} to {{ change.get_new_status_display }}
-              {% else %}
-                Application submitted
-              {% endif %}
-            </div>
-            <div style="font-size: 0.9rem; color: #6b7280; margin-bottom: 8px;">
-              {{ change.changed_at|date:"M j, Y g:i A" }} by {{ change.changed_by.get_full_name|default:change.changed_by.username }}
-            </div>
-            {% if change.notes %}
-              <div style="font-size: 0.95rem; color: #4b5563; background: #f8fafc; padding: 8px 12px; border-radius: 6px;">
-                {{ change.notes }}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Job Details Summary -->
+  <!-- Job Details Summary (first) -->
   <div class="card">
     <h2 style="margin: 0 0 20px;">Job Summary</h2>
+
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
       <div>
         <strong style="color: #374151;">Company:</strong><br>
@@ -134,80 +14,152 @@
       </div>
       <div>
         <strong style="color: #374151;">Location:</strong><br>
-        <span style="color: #6b7280;">{{ application.job.location|default:"Not specified" }}</span>
+        <span style="color: #6b7280;">{{ application.job.location|default:"—" }}</span>
       </div>
       <div>
         <strong style="color: #374151;">Work Type:</strong><br>
-        <span style="color: #6b7280;">{{ application.job.get_work_type_display }}</span>
+        <span style="color: #6b7280;">{{ application.job.get_work_type_display|default:"—" }}</span>
       </div>
       <div>
         <strong style="color: #374151;">Salary:</strong><br>
-        <span style="color: #059669; font-weight: 600;">{{ application.job.salary_range_display }}</span>
+        <span style="color: #6b7280;">
+          {% if application.job.salary_min or application.job.salary_max %}
+            {% if application.job.salary_min %}${{ application.job.salary_min }}{% endif %}
+            {% if application.job.salary_min and application.job.salary_max %}–{% endif %}
+            {% if application.job.salary_max %}${{ application.job.salary_max }}{% endif %}
+          {% else %}—{% endif %}
+        </span>
+      </div>
+      <div>
+        <strong style="color: #374151;">Job Status:</strong><br>
+        <span class="status-badge" style="
+          {% if application.job.status == application.job.Status.ACTIVE %}
+            background:#dcfce7;color:#166534;border:1px solid #bbf7d0;
+          {% else %}
+            background:#fee2e2;color:#991b1b;border:1px solid #fecaca;
+          {% endif %}
+        ">
+          {{ application.job.get_status_display }}
+        </span>
+      </div>
+      <div>
+        <strong style="color: #374151;">Application Status:</strong><br>
+        <span class="status-badge" style="
+          {% if application.status == application.Status.PENDING %}
+            background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe;
+          {% elif application.status == application.Status.REVIEWING %}
+            background:#fef9c3;color:#854d0e;border:1px solid #fde68a;
+          {% elif application.status == application.Status.INTERVIEW %}
+            background:#f3e8ff;color:#6b21a8;border:1px solid #e9d5ff;
+          {% elif application.status == application.Status.REJECTED %}
+            background:#fee2e2;color:#991b1b;border:1px solid #fecaca;
+          {% elif application.status == application.Status.HIRED %}
+            background:#dcfce7;color:#166534;border:1px solid #bbf7d0;
+          {% endif %}
+        ">
+          {{ application.get_status_display }}
+        </span>
       </div>
     </div>
-    
-    {% if application.job.required_skills.all %}
-      <div style="margin-top: 20px;">
-        <strong style="color: #374171;">Required Skills:</strong>
-        <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;">
-          {% for skill in application.job.required_skills.all %}
-            <span style="background: #fef2f2; color: #b91c1c; padding: 4px 8px; border-radius: 4px; font-size: 0.875rem; border: 1px solid #fecaca;">{{ skill.name }}</span>
-          {% endfor %}
-        </div>
+
+    <!-- Description + skills inside the summary card -->
+    {% if application.job.description %}
+      <div style="margin-top:12px;">
+        <h3 style="margin:0 0 6px;">Job Description</h3>
+        <div style="line-height:1.6;">{{ application.job.description|linebreaks }}</div>
       </div>
     {% endif %}
 
-    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-      <div style="display: flex; gap: 12px;">
-        <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline">← Back to My Applications</a>
-        <a href="{% url 'jobs:detail' application.job.pk %}" class="btn btn-outline">View Full Job Posting</a>
+    {% if application.job.required_skills.count %}
+      <div style="margin-top:12px;">
+        <strong>Required Skills:</strong>
+        <span class="field-help">{{ application.job.required_skills.all|join:", " }}</span>
+      </div>
+    {% endif %}
+
+    {% if application.job.nice_to_have_skills.count %}
+      <div style="margin-top:6px;">
+        <strong>Preferred Skills:</strong>
+        <span class="field-help">{{ application.job.nice_to_have_skills.all|join:", " }}</span>
+      </div>
+    {% endif %}
+
+    {% if request.user == application.job.posted_by %}
+      <!-- narrowed select + wider button; centered horizontally -->
+      <form method="post" class="application-status-form" style="display:flex; gap: 10px; align-items:center; justify-content:center; width:100%; margin-top:16px;">
+        {% csrf_token %}
+        {{ form.status }}
+        <button class="btn" type="submit">Update Status</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- Applicant Profile (second) -->
+  <div style="margin-top: 16px;">
+    {% if profile %}
+      {% include "profiles/_profile_public_block.html" with profile=profile experiences_qs=experiences_qs educations_qs=educations_qs links_qs=links_qs %}
+    {% endif %}
+  </div>
+
+  <!-- Applicant Note (third) -->
+  {% if application.cover_letter %}
+    <div class="card" style="margin-top: 16px;">
+      <strong>Applicant Note</strong>
+      <div style="margin-top:8px; font-size:0.95rem; line-height:1.6;">
+        {{ application.cover_letter|linebreaks }}
       </div>
     </div>
-  </div>
+  {% endif %}
+
+  <!-- Change History (fourth) -->
+  {% if history %}
+    <div class="card" style="margin-top: 16px;">
+      <strong>Status History</strong>
+      <ul class="list" style="margin-top:8px;">
+        {% for h in history %}
+          <li>
+            <strong>{{ h.get_new_status_display }}</strong>
+            <span class="muted"> — {{ h.changed_at|date:"M j, Y, g:i A" }}</span>
+            {% if h.notes %}<div class="muted">{{ h.notes }}</div>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
 </div>
 
 <style>
-.status-badge {
-  text-align: center;
-}
-.status-badge.status-applied { background: #dbeafe; color: #1e40af; }
-.status-badge.status-reviewing { background: #fef3c7; color: #92400e; }
-.status-badge.status-interview { background: #e0e7ff; color: #3730a3; }
-.status-badge.status-offer { background: #d1fae5; color: #065f46; }
-.status-badge.status-accepted { background: #dcfce7; color: #166534; }
-.status-badge.status-rejected { background: #fee2e2; color: #991b1b; }
-.status-badge.status-withdrawn { background: #f3f4f6; color: #374151; }
-
-.timeline-step.active .step-circle {
-  border-color: #2563eb !important;
-  background: #2563eb !important;
+/* Keep consistent with existing style system */
+.status-badge { 
+  display: inline-block; 
+  padding: 4px 10px; 
+  border-radius: 999px; 
+  font-weight: 600; 
+  font-size: 0.85rem; 
 }
 
-.timeline-step.active .step-label {
-  color: #2563eb !important;
-  font-weight: 600;
+/* Scoped tweaks for the status form only */
+.application-status-form select[name="status"] {
+  width: auto;          /* don't stretch */
+  min-width: 180px;     /* readable but not huge */
+  max-width: 260px;     /* cap width */
+  flex: 0 0 auto;       /* prevent flex-grow */
 }
 
-@media (max-width: 640px) {
-  .application-detail-container {
-    padding: 0 16px;
-  }
-  
-  .status-timeline {
-    margin: 16px 0 !important;
-  }
-  
-  .timeline-step {
-    font-size: 0.8rem;
-  }
-  
-  .step-label {
-    font-size: 0.7rem !important;
-  }
-  
-  .form-grid {
-    grid-template-columns: 1fr !important;
-  }
+.application-status-form {
+  justify-content: center; /* center dropdown + button */
+}
+
+.application-status-form .btn {
+  min-width: 150px;     /* ensure text stays on one line */
+  white-space: nowrap;  /* never wrap inside button */
+}
+
+/* Mobile: allow wrapping if space is tight, button full width */
+@media (max-width: 480px) {
+  .application-status-form { flex-wrap: wrap; }
+  .application-status-form .btn { width: 100%; }
 }
 </style>
 {% endblock %}
