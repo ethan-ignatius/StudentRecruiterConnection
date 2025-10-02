@@ -5,7 +5,7 @@
     <h1>Welcome back</h1>
     <form method="post">
       {% csrf_token %}
-      <div class="form-grid">
+      <div class="form-grid" style="grid-template-columns:1fr;>
         <div class="field">
           {{ form.username.label_tag }}
           {{ form.username }}
@@ -29,13 +29,13 @@
             </ul>
           {% endif %}
         </div>
+          <p style="margin-top:14px;">
+          <button class="btn" type="submit">Sign in</button>
+        </p>
+        <p class="field-help" style="margin-top:10px;">
+          New here? <a href="{% url 'accounts:signup' %}">Create an account</a>.
+        </p>
       </div>
-      <p style="margin-top:14px;">
-        <button class="btn" type="submit">Sign in</button>
-      </p>
     </form>
-    <p class="field-help" style="margin-top:10px;">
-      New here? <a href="{% url 'accounts:signup' %}">Create an account</a>.
-    </p>
   </div>
 {% endblock %}

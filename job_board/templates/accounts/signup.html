@@ -14,7 +14,7 @@
 
     <form method="post" novalidate>
       {% csrf_token %}
-      <div class="form-grid">
+      <div class="form-grid" style="grid-template-columns:1fr;>
 
         <div class="field">
           {{ form.username.label_tag }}
@@ -66,11 +66,8 @@
             </ul>
           {% endif %}
         </div>
-
+        <p style="margin-top:14px;"><button class="btn" type="submit">Create account</button></p>
       </div>
-
-      <p class="field-help">Choose “Recruiter” only if you’re recruiting (feature placeholder).</p>
-      <p style="margin-top:14px;"><button class="btn" type="submit">Create account</button></p>
     </form>
   </div>
 {% endblock %}
