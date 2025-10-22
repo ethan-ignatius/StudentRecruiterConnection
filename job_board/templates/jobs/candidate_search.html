@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% block title %}Find Candidates{% endblock %}
+
+{% block content %}
+<div class="search-header">
+  <h1>Find Candidates</h1>
+  <p class="text-muted">Search through {{ total_count }} candidate profile{{ total_count|pluralize }}</p>
+</div>
+
+<!-- Search Form -->
+<div class="card search-card">
+  <form method="get" action="{% url 'jobs:candidate_search' %}" class="search-form" id="candidate-search-form">
+    <div class="search-row">
+      <div class="search-field search-field-main">
+        {{ form.q.label_tag }}
+        {{ form.q }}
+        {% if form.q.errors %}
+          <ul class="errorlist">{% for error in form.q.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      
+      <div class="search-field">
+        {{ form.skills.label_tag }}
+        {{ form.skills }}
+        {% if form.skills.errors %}
+          <ul class="errorlist">{% for error in form.skills.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      
+      <div class="search-field">
+        {{ form.location.label_tag }}
+        {{ form.location }}
+        {% if form.location.errors %}
+          <ul class="errorlist">{% for error in form.location.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      
+      <div class="search-field">
+        <button type="submit" class="btn search-btn">Search</button>
+      </div>
+    </div>
+    
+    {% if has_filters %}
+      <div class="active-filters" style="margin-top: 12px; display: flex; align-items: center; gap: 12px;">
+        <span style="color: #6b7280;">Active filters:</span>
+        {% if search_params.skills %}
+          <span class="filter-tag">Skills: {{ search_params.skills }}</span>
+        {% endif %}
+        {% if search_params.location %}
+          <span class="filter-tag">Location: {{ search_params.location }}</span>
+        {% endif %}
+        <a href="{% url 'jobs:candidate_search' %}" class="clear-filters">Clear all</a>
+      </div>
+    {% endif %}
+  </form>
+  
+  <!-- Save Search Button -->
+  {% if has_filters %}
+    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+      <button type="button" class="btn btn-outline" onclick="showSaveSearchModal()">
+        💾 Save This Search
+      </button>
+      <span style="color: #6b7280; font-size: 0.9rem; margin-left: 8px;">
+        Get notified when new candidates match your criteria
+      </span>
+    </div>
+  {% endif %}
+</div>
+
+{% if current_saved_search %}
+  <div class="card" style="background: #f0f9ff; border-left: 4px solid #2563eb; margin-bottom: 16px;">
+    <strong>Running saved search:</strong> {{ current_saved_search.name }}
+    <a href="{% url 'jobs:saved_searches' %}" style="margin-left: 12px;">View all saved searches →</a>
+  </div>
+{% endif %}
+
+{% if candidates %}
+  <!-- Pagination (top) -->
+  <div class="pagination">
+    {% if candidates.has_previous %}
+      <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}page={{ candidates.previous_page_number }}" class="btn">Previous</a>
+    {% else %}
+      <span class="btn disabled">Previous</span>
+    {% endif %}
+    
+    <span class="page-info">Page {{ candidates.number }} of {{ candidates.paginator.num_pages }}</span>
+    
+    {% if candidates.has_next %}
+      <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}page={{ candidates.next_page_number }}" class="btn">Next</a>
+    {% else %}
+      <span class="btn disabled">Next</span>
+    {% endif %}
+  </div>
+
+  <div class="results-meta">
+    <p>{{ candidates.paginator.count }} candidate{{ candidates.paginator.count|pluralize }} found</p>
+  </div>
+  
+  <div class="candidate-list">
+    {% for profile in candidates %}
+      <div class="candidate-card card">
+        <div class="candidate-header">
+          <h3>
+            <a href="{% url 'profiles:public_profile' profile.user.username %}">
+              {{ profile.user.get_full_name|default:profile.user.username }}
+            </a>
+          </h3>
+          {% if profile.show_headline and profile.headline %}
+            <p class="candidate-headline">{{ profile.headline }}</p>
+          {% endif %}
+          {% if profile.show_location and profile.location %}
+            <p class="candidate-location">📍 {{ profile.location }}</p>
+          {% endif %}
+        </div>
+        
+        {% if profile.show_summary and profile.summary %}
+          <div class="candidate-summary">
+            <p>{{ profile.summary|truncatechars:200 }}</p>
+          </div>
+        {% endif %}
+        
+        {% if profile.show_skills and profile.skills.exists %}
+          <div class="candidate-skills">
+            <strong>Skills:</strong>
+            <div class="skills-list" style="display: inline;">
+              {% for skill in profile.skills.all|slice:":8" %}
+                <span class="skill-tag">{{ skill.name }}</span>
+              {% endfor %}
+              {% if profile.skills.count > 8 %}
+                <span class="skill-tag">+{{ profile.skills.count|add:"-8" }} more</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+        
+        <div class="candidate-actions" style="margin-top: 12px;">
+          <a class="btn" href="{% url 'profiles:public_profile' profile.user.username %}">View Full Profile</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination (bottom) -->
+  <div class="pagination">
+    {% if candidates.has_previous %}
+      <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}page={{ candidates.previous_page_number }}" class="btn">Previous</a>
+    {% else %}
+      <span class="btn disabled">Previous</span>
+    {% endif %}
+    
+    <span class="page-info">Page {{ candidates.number }} of {{ candidates.paginator.num_pages }}</span>
+    
+    {% if candidates.has_next %}
+      <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}page={{ candidates.next_page_number }}" class="btn">Next</a>
+    {% else %}
+      <span class="btn disabled">Next</span>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="no-results">
+    <div class="no-results-content">
+      <h3>No candidates found</h3>
+      <p>Try broadening your search criteria.</p>
+    </div>
+  </div>
+{% endif %}
+
+<!-- Save Search Modal -->
+<div id="save-search-modal" class="modal" style="display: none;">
+  <div class="modal-content card" style="max-width: 500px; margin: 100px auto;">
+    <h2>Save This Search</h2>
+    <form method="post" action="{% url 'jobs:save_candidate_search' %}">
+      {% csrf_token %}
+      <input type="hidden" name="skills" value="{{ search_params.skills }}">
+      <input type="hidden" name="location" value="{{ search_params.location }}">
+      
+      <div class="field">
+        <label for="search-name">Search Name</label>
+        <input type="text" id="search-name" name="name" required 
+               placeholder="e.g., Senior Python Developers in NYC">
+      </div>
+      
+      <div class="field" style="margin-top: 12px;">
+        <p><strong>Search Criteria:</strong></p>
+        {% if search_params.skills %}
+          <p>Skills: <em>{{ search_params.skills }}</em></p>
+        {% endif %}
+        {% if search_params.location %}
+          <p>Location: <em>{{ search_params.location }}</em></p>
+        {% endif %}
+      </div>
+      
+      <div class="field" style="margin-top: 12px;">
+        <label>
+          <input type="checkbox" name="notify_on_new_matches" checked>
+          Notify me when new candidates match this search
+        </label>
+      </div>
+      
+      <div class="form-actions" style="margin-top: 16px;">
+        <button type="submit" class="btn">Save Search</button>
+        <button type="button" class="btn btn-outline" onclick="hideSaveSearchModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.search-header { margin-bottom: 24px; }
+.text-muted { color: #6b7280; }
+.search-card { margin-bottom: 24px; }
+.search-row { display: grid; grid-template-columns: 2fr 1.5fr 1fr auto; gap: 16px; align-items: end; }
+.search-field { display: flex; flex-direction: column; }
+.search-btn { white-space: nowrap; }
+
+.filter-tag {
+  background: #e5e7eb;
+  color: #374151;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+}
+
+.candidate-list { display: grid; gap: 16px; }
+.candidate-card { position: relative; }
+.candidate-header h3 { margin: 0 0 8px 0; }
+.candidate-headline { color: #374151; font-weight: 600; margin: 4px 0; }
+.candidate-location { color: #6b7280; margin: 4px 0; }
+.candidate-summary { margin: 12px 0; color: #4b5563; }
+.candidate-skills { margin: 12px 0; }
+
+.skill-tag {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0;
+}
+
+.btn.disabled { opacity: 0.5; pointer-events: none; }
+.page-info { color: #6b7280; }
+
+.no-results {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+  text-align: center;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .search-row { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+function showSaveSearchModal() {
+  document.getElementById('save-search-modal').style.display = 'block';
+}
+
+function hideSaveSearchModal() {
+  document.getElementById('save-search-modal').style.display = 'none';
+}
+
+// Close modal on outside click
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('save-search-modal');
+  if (e.target === modal) {
+    hideSaveSearchModal();
+  }
+});
+</script>
+{% endblock %}

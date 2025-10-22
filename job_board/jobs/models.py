@@ -212,3 +212,72 @@ class CityCoord(models.Model):
 
     class Meta:
         unique_together = ("city", "state")
+
+class SavedCandidateSearch(models.Model):
+    """Recruiter's saved candidate search criteria"""
+    recruiter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='saved_candidate_searches'
+    )
+    name = models.CharField(
+        max_length=200,
+        help_text="Name for this saved search (e.g., 'Senior Python Developers in NYC')"
+    )
+    
+    # Search criteria
+    skills = models.TextField(
+        blank=True,
+        help_text="Comma-separated skill names"
+    )
+    location = models.CharField(max_length=200, blank=True)
+    experience_min = models.IntegerField(null=True, blank=True)
+    experience_max = models.IntegerField(null=True, blank=True)
+    
+    # Notification settings
+    notify_on_new_matches = models.BooleanField(
+        default=True,
+        help_text="Send notification when new candidates match this search"
+    )
+    last_notified = models.DateTimeField(null=True, blank=True)
+    
+    # Metadata
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_run = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Saved Candidate Search"
+        verbose_name_plural = "Saved Candidate Searches"
+    
+    def __str__(self):
+        return f"{self.name} - {self.recruiter.username}"
+    
+    def get_skill_list(self):
+        """Parse comma-separated skills into a list"""
+        if not self.skills:
+            return []
+        return [s.strip() for s in self.skills.split(',') if s.strip()]
+
+
+class SearchNotification(models.Model):
+    """Track notifications sent for saved searches"""
+    saved_search = models.ForeignKey(
+        SavedCandidateSearch,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    sent_at = models.DateTimeField(default=timezone.now)
+    candidates_count = models.IntegerField(default=0)
+    new_candidates = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='search_notifications',
+        blank=True
+    )
+    
+    class Meta:
+        ordering = ['-sent_at']
+    
+    def __str__(self):
+        return f"Notification for {self.saved_search.name} - {self.sent_at}"

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Saved Candidate Searches{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <div>
+    <h1>Saved Candidate Searches</h1>
+    <p class="page-description">Manage your saved searches and get notified of new matches.</p>
+  </div>
+  <a href="{% url 'jobs:candidate_search' %}" class="btn">Find Candidates</a>
+</div>
+
+{% if searches %}
+  <div class="searches-list">
+    {% for search in searches %}
+      <div class="card search-item">
+        <div class="search-header">
+          <div>
+            <h3 style="margin: 0 0 8px 0;">{{ search.name }}</h3>
+            
+            <div class="search-criteria" style="color: #6b7280; font-size: 0.95rem;">
+              {% if search.skills %}
+                <span>Skills: <em>{{ search.skills }}</em></span>
+              {% endif %}
+              {% if search.location %}
+                {% if search.skills %} • {% endif %}
+                <span>Location: <em>{{ search.location }}</em></span>
+              {% endif %}
+            </div>
+            
+            <div class="search-meta" style="margin-top: 8px; font-size: 0.9rem; color: #9ca3af;">
+              <span>Created {{ search.created_at|date:"M j, Y" }}</span>
+              {% if search.last_run %}
+                • Last run {{ search.last_run|date:"M j, Y" }}
+              {% endif %}
+              {% if search.notification_count %}
+                • {{ search.notification_count }} notification{{ search.notification_count|pluralize }} sent
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="search-status" style="text-align: right;">
+            {% if search.notify_on_new_matches %}
+              <span class="status-badge" style="background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 9999px; font-size: 0.85rem;">
+                🔔 Notifications ON
+              </span>
+            {% else %}
+              <span class="status-badge" style="background: #f3f4f6; color: #6b7280; padding: 4px 12px; border-radius: 9999px; font-size: 0.85rem;">
+                🔕 Notifications OFF
+              </span>
+            {% endif %}
+          </div>
+        </div>
+        
+        <div class="search-actions" style="display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
+          <form method="post" action="{% url 'jobs:run_saved_search' search.pk %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn">Run Search</button>
+          </form>
+          
+          <form method="post" action="{% url 'jobs:toggle_search_notifications' search.pk %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline">
+              {% if search.notify_on_new_matches %}
+                Turn Off Notifications
+              {% else %}
+                Turn On Notifications
+              {% endif %}
+            </button>
+          </form>
+          
+          <form method="post" action="{% url 'jobs:delete_saved_search' search.pk %}" 
+                onsubmit="return confirm('Are you sure you want to delete this saved search?');"
+                style="display: inline; margin-left: auto;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline" style="color: #dc2626; border-color: #dc2626;">
+              Delete
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state card" style="text-align: center; padding: 48px 24px;">
+    <h3 style="color: #6b7280; margin-bottom: 12px;">No Saved Searches Yet</h3>
+    <p style="color: #9ca3af; margin-bottom: 24px;">
+      Save your frequently-used candidate searches to quickly re-run them and get notified of new matches.
+    </p>
+    <a href="{% url 'jobs:candidate_search' %}" class="btn">Start Searching for Candidates</a>
+  </div>
+{% endif %}
+
+<div class="info-card card" style="margin-top: 32px; background: #f8fafc;">
+  <h3 style="margin: 0 0 12px; font-size: 1.1rem;">How Saved Searches Work</h3>
+  <ul style="margin: 0; padding-left: 24px; line-height: 1.8;">
+    <li><strong>Save your searches:</strong> When you search for candidates, you can save your criteria for quick access later</li>
+    <li><strong>Get notified:</strong> Enable notifications to receive alerts when new candidates match your search</li>
+    <li><strong>Quick access:</strong> Run any saved search with one click without re-entering criteria</li>
+    <li><strong>Stay organized:</strong> Give your searches memorable names to keep track of different hiring needs</li>
+  </ul>
+</div>
+
+<style>
+.page-description { color: #6b7280; margin: 4px 0 0 0; }
+.searches-list { display: grid; gap: 16px; }
+.search-item { }
+.search-header { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
+.search-criteria em { color: #374151; }
+
+@media (max-width: 768px) {
+  .search-header { flex-direction: column; }
+  .search-status { text-align: left; margin-top: 8px; }
+  .search-actions { flex-wrap: wrap; }
+}
+</style>
+{% endblock %}
