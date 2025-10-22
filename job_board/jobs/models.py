@@ -276,8 +276,25 @@ class SearchNotification(models.Model):
         blank=True
     )
     
+    # ADD THESE NEW FIELDS:
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
     class Meta:
         ordering = ['-sent_at']
     
     def __str__(self):
         return f"Notification for {self.saved_search.name} - {self.sent_at}"
+    
+    # ADD THESE NEW METHODS:
+    def mark_as_read(self):
+        """Mark this notification as read"""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+    
+    def get_time_since(self):
+        """Return human-readable time since notification"""
+        from django.utils.timesince import timesince
+        return timesince(self.sent_at)

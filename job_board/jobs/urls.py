@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
-from . import candidate_views  # Add this import at top
+from . import candidate_views  
+from . import notification_views
 
 app_name = "jobs"
 
@@ -23,4 +24,9 @@ urlpatterns = [
     path("candidates/saved-searches/<int:pk>/run/", candidate_views.run_saved_search, name="run_saved_search"),
     path("candidates/saved-searches/<int:pk>/delete/", candidate_views.delete_saved_search, name="delete_saved_search"),
     path("candidates/saved-searches/<int:pk>/toggle-notifications/", candidate_views.toggle_search_notifications, name="toggle_search_notifications"),
+
+    path("notifications/", notification_views.notifications_list, name="notifications"),
+    path("notifications/<int:pk>/read/", notification_views.mark_notification_read, name="mark_notification_read"),
+    path("notifications/mark-all-read/", notification_views.mark_all_read, name="mark_all_read"),
+    path("notifications/<int:pk>/view/", notification_views.notification_detail, name="notification_detail"),
 ]
