@@ -250,6 +250,13 @@ class SavedCandidateSearch(models.Model):
         ordering = ['-created_at']
         verbose_name = "Saved Candidate Search"
         verbose_name_plural = "Saved Candidate Searches"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recruiter', 'name'],
+                name='uniq_saved_candidate_search_name_per_recruiter'
+            ),
+        ]
     
     def __str__(self):
         return f"{self.name} - {self.recruiter.username}"

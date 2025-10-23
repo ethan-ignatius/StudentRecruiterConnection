@@ -8,6 +8,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q, Count
 from django.http import Http404
 from django.urls import reverse
+from django.db import IntegrityError
+from urllib.parse import urlencode
 
 from accounts.models import User
 from profiles.models import JobSeekerProfile, Skill
@@ -93,20 +95,36 @@ def save_candidate_search(request):
     """Save current search criteria (Story #15)"""
     if not request.user.is_recruiter():
         raise Http404("Page not found")
-    
+
     # Get search parameters from POST
     search_params = {
         'skills': request.POST.get('skills', ''),
         'location': request.POST.get('location', ''),
+        'q': request.POST.get('q', ''),
     }
-    
-    form = SaveCandidateSearchForm(request.POST, search_params=search_params)
+
+    # pass recruiter to the form (so clean_name can check duplicates)
+    form = SaveCandidateSearchForm(
+        request.POST,
+        search_params=search_params,
+    )
+    form.recruiter = request.user
     
     if form.is_valid():
         saved_search = form.save(commit=False)
-        saved_search.recruiter = request.user
-        saved_search.save()
-        
+        saved_search.recruiter = request.user  # keep your existing assignment
+
+        # DB-level safety net (in case of a race or manual tampering)
+        try:
+            saved_search.save()
+        except IntegrityError:
+            messages.error(
+                request,
+                'You already have a saved search with this name. Choose a different name.'
+            )
+            return redirect('jobs:candidate_search')
+
+        # ... whatever you already do next (messages, redirect, etc.) ...
         messages.success(
             request,
             f'Search "{saved_search.name}" saved successfully! '
@@ -114,7 +132,11 @@ def save_candidate_search(request):
         )
         return redirect('jobs:saved_searches')
     else:
-        messages.error(request, 'Please provide a name for your search.')
+        # surface the field error if present; otherwise keep the generic message
+        messages.error(
+            request,
+            form.errors.get('name', ['Please correct the errors and try again.'])[0]
+        )
         return redirect('jobs:candidate_search')
 
 
@@ -139,27 +161,33 @@ def saved_searches(request):
 @login_required
 @require_POST
 def run_saved_search(request, pk):
-    """Run a saved search (Story #15)"""
+    """Replay a saved candidate search"""
     if not request.user.is_recruiter():
         raise Http404("Page not found")
-    
+
     saved_search = get_object_or_404(
         SavedCandidateSearch,
         pk=pk,
         recruiter=request.user
     )
-    
-    # Build query string from saved search params
-    params = []
-    if saved_search.skills:
-        params.append(f'skills={saved_search.skills}')
-    if saved_search.location:
-        params.append(f'location={saved_search.location}')
-    params.append(f'saved_search={saved_search.id}')
-    
-    query_string = '&'.join(params)
-    return redirect(f"{reverse('jobs:candidate_search')}?{query_string}")
 
+    params = {}
+    skills_text = (saved_search.skills or '').strip()
+
+    # If the stored skills starts with "Name: ", treat the remainder as q
+    if skills_text.lower().startswith('name:'):
+        q_val = skills_text.split(':', 1)[1].strip()
+        if q_val:
+            params['q'] = q_val
+    elif skills_text:
+        params['skills'] = skills_text
+
+    if saved_search.location:
+        params['location'] = saved_search.location
+
+    params['saved_search'] = str(saved_search.id)
+
+    return redirect(f"{reverse('jobs:candidate_search')}?{urlencode(params)}")
 
 @login_required
 @require_POST

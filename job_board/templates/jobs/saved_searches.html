@@ -19,9 +19,13 @@
             <h3 style="margin: 0 0 8px 0;">{{ search.name }}</h3>
             
             <div class="search-criteria" style="color: #6b7280; font-size: 0.95rem;">
-              {% if search.skills %}
-                <span>Skills: <em>{{ search.skills }}</em></span>
-              {% endif %}
+              {% with skills_text=search.skills|default_if_none:'' %}
+                {% if skills_text and skills_text|slice:":5"|lower == "name:" %}
+                  <span>Name: <em>{{ skills_text|slice:"6:" }}</em></span>
+                {% elif skills_text %}
+                  <span>Skills: <em>{{ skills_text }}</em></span>
+                {% endif %}
+              {% endwith %}
               {% if search.location %}
                 {% if search.skills %} • {% endif %}
                 <span>Location: <em>{{ search.location }}</em></span>

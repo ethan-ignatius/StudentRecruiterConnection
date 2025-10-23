@@ -43,6 +43,9 @@
     {% if has_filters %}
       <div class="active-filters" style="margin-top: 12px; display: flex; align-items: center; gap: 12px;">
         <span style="color: #6b7280;">Active filters:</span>
+        {% if search_params.q %}
+          <span class="filter-tag">Name: {{ search_params.q }}</span>
+        {% endif %}
         {% if search_params.skills %}
           <span class="filter-tag">Skills: {{ search_params.skills }}</span>
         {% endif %}
@@ -171,6 +174,7 @@
     <h2>Save This Search</h2>
     <form method="post" action="{% url 'jobs:save_candidate_search' %}">
       {% csrf_token %}
+      <input type="hidden" name="q" value="{{ search_params.q }}">
       <input type="hidden" name="skills" value="{{ search_params.skills }}">
       <input type="hidden" name="location" value="{{ search_params.location }}">
       
@@ -182,6 +186,9 @@
       
       <div class="field" style="margin-top: 12px;">
         <p><strong>Search Criteria:</strong></p>
+        {% if search_params.q %}
+          <p>Name: <em>{{ search_params.q }}</em></p>
+        {% endif %}
         {% if search_params.skills %}
           <p>Skills: <em>{{ search_params.skills }}</em></p>
         {% endif %}
@@ -190,13 +197,16 @@
         {% endif %}
       </div>
       
-      <div class="field" style="margin-top: 12px;">
-        <label>
-          <input type="checkbox" name="notify_on_new_matches" checked>
-          Notify me when new candidates match this search
+      <div class="notify-row" style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+        <label for="id_notify_on_new_matches" style="margin:0;width:">
+          Send notifications for new matches?
         </label>
+        <select name="notify_on_new_matches" id="id_notify_on_new_matches" style="width: 120px;">
+          <option value="True">Yes</option>
+          <option value="False">No</option>
+        </select>
       </div>
-      
+            
       <div class="form-actions" style="margin-top: 16px;">
         <button type="submit" class="btn">Save Search</button>
         <button type="button" class="btn btn-outline" onclick="hideSaveSearchModal()">Cancel</button>
