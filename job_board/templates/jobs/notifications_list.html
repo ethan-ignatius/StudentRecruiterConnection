@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="notifications-container">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1>🔔 Notifications</h1>
+      <p class="page-description">
+        {% if unread_count > 0 %}
+          You have {{ unread_count }} unread notification{{ unread_count|pluralize }}
+        {% else %}
+          All caught up! No unread notifications.
+        {% endif %}
+      </p>
+    </div>
+    <div>
+      {% if unread_count > 0 %}
+        <form method="post" action="{% url 'jobs:mark_all_read' %}" style="display: inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline">Mark All as Read</button>
+        </form>
+      {% endif %}
+      <a href="{% url 'jobs:saved_searches' %}" class="btn">Manage Saved Searches</a>
+    </div>
+  </div>
+
+  {% if unread_notifications %}
+    <div class="notifications-section">
+      <h2 style="margin: 0 0 16px; font-size: 1.2rem; color: #111827;">
+        Unread ({{ unread_count }})
+      </h2>
+      
+      {% for notification in unread_notifications %}
+        <div class="notification-card card unread" style="border-left: 4px solid #2563eb;">
+          <div class="notification-content">
+            <div class="notification-header">
+              <div style="flex: 1;">
+                <h3 style="margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">
+                  <span class="unread-dot" style="width: 10px; height: 10px; background: #2563eb; border-radius: 50%; display: inline-block;"></span>
+                  <span>{{ notification.candidates_count }} new candidate{{ notification.candidates_count|pluralize }} match{{ notification.candidates_count|pluralize:"es," }} your search</span>
+                </h3>
+                
+                <p style="margin: 0 0 8px; color: #374151; font-weight: 600;">
+                  "{{ notification.saved_search.name }}"
+                </p>
+                
+                <div style="display: flex; gap: 16px; color: #6b7280; font-size: 0.9rem;">
+                  <span>🕐 {{ notification.get_time_since }} ago</span>
+                  {% if notification.saved_search.skills %}
+                    <span>Skills: {{ notification.saved_search.skills }}</span>
+                  {% endif %}
+                  {% if notification.saved_search.location %}
+                    <span>📍 {{ notification.saved_search.location }}</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <div class="notification-actions" style="display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
+              <a href="{% url 'jobs:notification_detail' notification.pk %}" class="btn">
+                View Candidates
+              </a>
+              
+              <form method="post" action="{% url 'jobs:mark_notification_read' notification.pk %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline">Mark as Read</button>
+              </form>
+              
+              <a href="{% url 'jobs:run_saved_search' notification.saved_search.pk %}" class="btn btn-outline">
+                Re-run Search
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if read_notifications %}
+    <div class="notifications-section" style="margin-top: 32px;">
+      <h2 style="margin: 0 0 16px; font-size: 1.2rem; color: #6b7280;">
+        Read ({{ read_notifications|length }})
+      </h2>
+      
+      {% for notification in read_notifications %}
+        <div class="notification-card card read" style="border-left: 4px solid #e5e7eb; background: #fafafa;">
+          <div class="notification-content">
+            <div class="notification-header">
+              <div style="flex: 1;">
+                <h3 style="margin: 0 0 8px; color: #6b7280;">
+                  {{ notification.candidates_count }} candidate{{ notification.candidates_count|pluralize }} matched your search
+                </h3>
+                
+                <p style="margin: 0 0 8px; color: #6b7280; font-weight: 600;">
+                  "{{ notification.saved_search.name }}"
+                </p>
+                
+                <div style="display: flex; gap: 16px; color: #9ca3af; font-size: 0.9rem;">
+                  <span>🕐 {{ notification.get_time_since }} ago</span>
+                  {% if notification.read_at %}
+                    <span>✓ Read {{ notification.read_at|timesince }} ago</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <div class="notification-actions" style="display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
+              <a href="{% url 'jobs:notification_detail' notification.pk %}" class="btn btn-outline" style="font-size: 0.9rem; padding: 6px 12px;">
+                View Candidates
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if not unread_notifications and not read_notifications %}
+    <div class="empty-state card" style="text-align: center; padding: 48px 24px;">
+      <div style="font-size: 3rem; margin-bottom: 16px;">🔕</div>
+      <h3 style="color: #6b7280; margin-bottom: 12px;">No Notifications Yet</h3>
+      <p style="color: #9ca3af; margin-bottom: 24px;">
+        You'll receive notifications here when new candidates match your saved searches.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <a href="{% url 'jobs:candidate_search' %}" class="btn">Search Candidates</a>
+        <a href="{% url 'jobs:saved_searches' %}" class="btn btn-outline">View Saved Searches</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Info Card -->
+  <div class="info-card card" style="margin-top: 32px; background: #f0f9ff; border-left: 4px solid #2563eb;">
+    <h3 style="margin: 0 0 12px; font-size: 1rem; color: #1e40af;">💡 How Notifications Work</h3>
+    <ul style="margin: 0; padding-left: 24px; line-height: 1.8; color: #1e40af;">
+      <li>Notifications are created when new candidates match your saved searches</li>
+      <li>Run the check command: <code>python manage.py check_candidate_matches</code></li>
+      <li>Set up automated checking with cron/scheduler for continuous monitoring</li>
+      <li>Click "View Candidates" to see the matching profiles</li>
+      <li>Notifications stay here until you mark them as read</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+.page-description { color: #6b7280; margin: 4px 0 0 0; }
+.notifications-section { }
+.notification-card { margin-bottom: 16px; position: relative; }
+.notification-card.unread { background: #fff; }
+.notification-card.read { opacity: 0.8; }
+.notification-content { }
+.notification-header { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
+
+.unread-dot {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+code {
+  background: #e0e7ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+  color: #3730a3;
+}
+
+@media (max-width: 768px) {
+  .notification-header { flex-direction: column; }
+  .notification-actions { flex-wrap: wrap; }
+}
+</style>
+
+<script>
+// Optional: AJAX mark as read (non-critical, works without JS)
+document.addEventListener('DOMContentLoaded', function() {
+  // Auto-refresh every 60 seconds to check for new notifications
+  // Commented out by default - uncomment if you want auto-refresh
+  // setInterval(function() {
+  //   location.reload();
+  // }, 60000);
+});
+</script>
+{% endblock %}

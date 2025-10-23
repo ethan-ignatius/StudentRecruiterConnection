@@ -38,7 +38,38 @@ body {
 .links a, .links button, .links input[type="button"], .links input[type="submit"] {
   display: inline-flex; align-items: center;
 }
+.notification-link {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
 
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #dc2626;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.notification-link:hover .notification-badge {
+  animation: none;
+  transform: scale(1.1);
+}
 /* Prevent nav link color from overriding buttons */
 .links a.btn { color: #fff !important; }
 .links a.btn.btn-outline { color: var(--brand-blue) !important; }
@@ -210,4 +241,5 @@ ul.skills-list li.skill-tag {
   background: #e5e7eb; color: #111827;
   border-radius: 9999px; padding: 6px 12px;
   font-size: .9rem; font-weight: 500; display: inline-block;
+  
 }

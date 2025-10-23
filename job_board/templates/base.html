@@ -26,6 +26,17 @@
           {% if user.is_recruiter %}
             <a href="{% url 'jobs:my_jobs' %}">My Job Postings</a>
             <a href="{% url 'jobs:post' %}">Post Job</a>
+            <a href="{% url 'jobs:candidate_search' %}">Find Candidates</a>
+            <a href="{% url 'jobs:saved_searches' %}">Saved Searches</a>
+
+            <!-- NEW: Notification Bell -->
+            <a href="{% url 'jobs:notifications' %}" class="notification-link"
+              style="position: relative; display: inline-flex; align-items: center;">
+              <span style="font-size: 1.2rem;">🔔</span>
+              {% if unread_notifications_count > 0 %}
+              <span class="notification-badge">{{ unread_notifications_count }}</span>
+              {% endif %}
+            </a>
           {% else %}
             <a href="{% url 'jobs:my_jobs' %}">My Applications</a>
           {% endif %}
