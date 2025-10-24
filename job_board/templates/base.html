@@ -40,6 +40,7 @@
           {% else %}
             <a href="{% url 'jobs:my_jobs' %}">My Applications</a>
           {% endif %}
+          <a href="{% url 'accounts:conversations' %}">Messages</a>
           <form method="post" action="{% url 'logout' %}" style="display:inline;">
             {% csrf_token %}
             <button class="btn btn-outline" type="submit">Logout</button>

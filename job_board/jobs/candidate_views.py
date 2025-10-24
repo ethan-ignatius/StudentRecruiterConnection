@@ -128,7 +128,7 @@ def save_candidate_search(request):
         messages.success(
             request,
             f'Search "{saved_search.name}" saved successfully! '
-            f'{"You\'ll be notified of new matches." if saved_search.notify_on_new_matches else ""}'
+            + ("You'll be notified of new matches." if saved_search.notify_on_new_matches else "")
         )
         return redirect('jobs:saved_searches')
     else:

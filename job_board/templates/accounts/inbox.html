@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Inbox</h2>
+<h3>Received Messages</h3>
+<ul>
+  {% for msg in received_messages %}
+    <li><strong>From:</strong> {{ msg.sender.username }}<br>
+        <strong>At:</strong> {{ msg.timestamp|date:'Y-m-d H:i' }}<br>
+        <strong>Message:</strong> {{ msg.content }}<br>
+        {% if not msg.is_read %}<span style="color:green;">(New)</span>{% endif %}
+    </li>
+  {% empty %}
+    <li>No messages received.</li>
+  {% endfor %}
+</ul>
+<h3>Sent Messages</h3>
+<ul>
+  {% for msg in sent_messages %}
+    <li><strong>To:</strong> {{ msg.recipient.username }}<br>
+        <strong>At:</strong> {{ msg.timestamp|date:'Y-m-d H:i' }}<br>
+        <strong>Message:</strong> {{ msg.content }}
+    </li>
+  {% empty %}
+    <li>No messages sent.</li>
+  {% endfor %}
+</ul>
+<a href="{% url 'accounts:send_message' %}">Send a new message</a>
+{% endblock %}
