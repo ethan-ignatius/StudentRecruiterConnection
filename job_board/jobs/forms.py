@@ -3,7 +3,6 @@ from django.db.models import Q
 from profiles.models import Skill
 from .models import Job, JobApplication
 
-
 class JobSearchForm(forms.Form):
     q = forms.CharField(
         required=False,
@@ -13,7 +12,7 @@ class JobSearchForm(forms.Form):
         }),
         label="Search"
     )
-    
+
     location = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
@@ -22,7 +21,7 @@ class JobSearchForm(forms.Form):
         }),
         label="Location"
     )
-    
+
     skills = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
@@ -32,57 +31,88 @@ class JobSearchForm(forms.Form):
         label="Skills",
         help_text="Comma-separated skills"
     )
-    
+
     work_type = forms.ChoiceField(
         required=False,
-        choices=[('', 'Any work type')] + Job.WorkType.choices,
+        choices=[("", "Any")] + list(Job.WorkType.choices),
+        widget=forms.Select(),
         label="Work Type"
     )
-    
+
     salary_min = forms.IntegerField(
         required=False,
-        widget=forms.NumberInput(attrs={
-            'placeholder': '50000',
-            'min': 0
-        }),
+        widget=forms.NumberInput(attrs={'placeholder': '50000', 'min': 0}),
         label="Minimum Salary ($)"
     )
-    
+
     salary_max = forms.IntegerField(
         required=False,
-        widget=forms.NumberInput(attrs={
-            'placeholder': '150000',
-            'min': 0
-        }),
+        widget=forms.NumberInput(attrs={'placeholder': '150000', 'min': 0}),
         label="Maximum Salary ($)"
     )
-    
+
+    # Keep the Yes/No/Any tri-state behaviour from before
     visa_sponsorship = forms.TypedChoiceField(
         required=False,
         label="Visa sponsorship",
-        choices=((True, "Yes"), (False, "No")),
-        coerce=lambda v: v in (True, "True", "true", "1", "on", "yes", "y"),
+        choices=(("", "Any"), (True, "Yes"), (False, "No")),
+        coerce=lambda v: None if v in ("", None)
+                         else v in (True, "True", "true", "1", "on", "yes", "y"),
+        empty_value=None,
         widget=forms.Select()
     )
-    
+
+    # hidden geolocation from the browser
+    lat = forms.FloatField(required=False, widget=forms.HiddenInput())
+    lng = forms.FloatField(required=False, widget=forms.HiddenInput())
+
+    # NEW: radius as a number input (no slider/checkboxes)
+    radius = forms.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=3000,
+        label="Radius (miles)",
+        widget=forms.NumberInput(attrs={'placeholder': '10'})
+    )
+
+    commute_radius = forms.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=3000,
+        label="Commute Distance (miles)",
+        widget=forms.NumberInput(attrs={'placeholder': '10'})
+    )
+
+    # --- cleaning helpers ---
+
     def clean_skills(self):
-        skills_text = self.cleaned_data.get('skills', '').strip()
-        if not skills_text:
+        raw = (self.cleaned_data.get("skills") or "").strip()
+        if not raw:
             return []
-        
-        # Parse comma-separated skills
-        skill_names = [s.strip() for s in skills_text.split(',') if s.strip()]
-        return skill_names
-    
+        return [s.strip() for s in raw.split(",") if s.strip()]
+
     def clean(self):
         cleaned_data = super().clean()
+
         salary_min = cleaned_data.get('salary_min')
         salary_max = cleaned_data.get('salary_max')
-        
         if salary_min and salary_max and salary_min > salary_max:
-            raise forms.ValidationError("Minimum salary cannot be greater than maximum salary.")
-        
+            raise forms.ValidationError(
+                "Minimum salary cannot be greater than maximum salary."
+            )
+
+        # If the user entered a radius, we need a location to compute distance.
+        radius = cleaned_data.get('radius')
+        lat = cleaned_data.get('lat')
+        lng = cleaned_data.get('lng')
+        if radius not in (None, "") and (lat is None or lng is None):
+            self.add_error(
+                None,
+                "Your location is needed to filter by distance. Please allow location access."
+            )
+
         return cleaned_data
+
 
 
 class JobForm(forms.ModelForm):

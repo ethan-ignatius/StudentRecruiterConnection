@@ -18,7 +18,7 @@
           <ul class="errorlist">{% for error in form.q.errors %}<li>{{ error }}</li>{% endfor %}</ul>
         {% endif %}
       </div>
-      
+
       <div class="search-field">
         {{ form.location.label_tag }}
         {{ form.location }}
@@ -26,12 +26,12 @@
           <ul class="errorlist">{% for error in form.location.errors %}<li>{{ error }}</li>{% endfor %}</ul>
         {% endif %}
       </div>
-      
+
       <div class="search-field">
         <button type="submit" name="search" value="1" class="btn search-btn">Search Jobs</button>
       </div>
     </div>
-    
+
     <!-- Advanced Filters -->
     <details class="filters-section">
       <summary class="filters-toggle">Advanced Filters</summary>
@@ -64,19 +64,48 @@
           {% endif %}
         </div>
 
-        <div class="field" style="grid-column: 1 / -1;">
-          {{ form.skills.label_tag }}
-          {{ form.skills }}
-          {% if form.skills.errors %}<ul class="errorlist">{% for error in form.skills.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+        <!-- Skills | Radius -->
+        <div class="skills-radius-row">
+          <div class="field">
+            {{ form.skills.label_tag }}
+            {{ form.skills }}
+            {% if form.skills.errors %}
+              <ul class="errorlist">{% for error in form.skills.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+          </div>
+
+          <div class="field">
+            {{ form.radius.label_tag }}
+            {{ form.radius }}
+            {% if form.radius.errors %}
+              <ul class="errorlist">{% for error in form.radius.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+            <small class="help-text">Leave blank for no distance filter</small>
+          </div>
+        </div>
+
+        {# Hidden device-location inputs (used for device radius) #}
+        {{ form.lat }} {{ form.lng }}
+
+        <!-- Commute Distance | Clear All -->
+        <div class="commute-clear-row">
+          <div class="field">
+            {{ form.commute_radius.label_tag }}
+            {{ form.commute_radius }}
+            {% if form.commute_radius.errors %}
+              <ul class="errorlist">{% for error in form.commute_radius.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+            <small class="help-text">Uses your profile location</small>
+          </div>
+
+          <div class="field field-right" style="justify-self:end;">
+            <div class="active-filters">
+              <a href="{% url 'jobs:search' %}" class="clear-filters">Clear all filters</a>
+            </div>
+          </div>
         </div>
       </div>
     </details>
-    
-    {% if has_filters %}
-      <div class="active-filters">
-        <a href="{% url 'jobs:search' %}" class="clear-filters">Clear all filters</a>
-      </div>
-    {% endif %}
   </form>
 </div>
 
@@ -88,9 +117,7 @@
     {% else %}
       <span class="btn disabled">Previous</span>
     {% endif %}
-    
     <span class="page-info">Page {{ jobs.number }} of {{ jobs.paginator.num_pages }}</span>
-    
     {% if jobs.has_next %}
       <a href="?{% if request.GET.q %}q={{ request.GET.q }}&amp;{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&amp;{% endif %}{% if request.GET.work_type %}work_type={{ request.GET.work_type }}&amp;{% endif %}{% if request.GET.salary_min %}salary_min={{ request.GET.salary_min }}&amp;{% endif %}{% if request.GET.salary_max %}salary_max={{ request.GET.salary_max }}&amp;{% endif %}{% if request.GET.visa_sponsorship %}visa_sponsorship={{ request.GET.visa_sponsorship }}&amp;{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&amp;{% endif %}page={{ jobs.next_page_number }}" class="btn">Next</a>
     {% else %}
@@ -101,7 +128,7 @@
   <div class="results-meta">
     <p>{{ jobs.paginator.count }} job{{ jobs.paginator.count|pluralize }} found</p>
   </div>
-  
+
   <div class="job-list">
     {% for job in jobs %}
       <div class="job-card">
@@ -115,7 +142,7 @@
             <span class="work-type work-type-{{ job.work_type|lower }}">{{ job.get_work_type_display }}</span>
           </div>
         </div>
-        
+
         <div class="job-details">
           <p class="job-description">{{ job.description|truncatechars:240 }}</p>
           <div class="job-info">
@@ -135,7 +162,7 @@
             {% endif %}
           </div>
         </div>
-        
+
         <div class="job-actions">
           <a class="btn btn-outline" href="{% url 'jobs:detail' job.pk %}">View Details</a>
         </div>
@@ -144,45 +171,6 @@
     {% endfor %}
   </div>
 
-  <!-- Map -->
-  <div id="jobs-map" class="map card" style="height: 320px; margin-top: 24px;"></div>
-  {% if jobs_for_map %}{{ jobs_for_map|json_script:"jobs-for-map-data" }}{% endif %}
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script>
-  document.addEventListener("DOMContentLoaded", function(){
-    var container = document.getElementById("jobs-map");
-    if (!container) return;
-
-    var data = [];
-    var el = document.getElementById("jobs-for-map-data");
-    if (el) { try { data = JSON.parse(el.textContent); } catch(e) { console.warn("Bad jobs_for_map JSON", e); } }
-
-    if (!data || !data.length) {
-      container.innerHTML = '<div style="padding:12px;color:#6b7280;">No map locations available for these results.</div>';
-      return;
-    }
-
-    var map = L.map("jobs-map");
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
-
-    var bounds = [];
-    data.forEach(function(j){
-      if (j.latitude == null || j.longitude == null) return;
-      var m = L.marker([j.latitude, j.longitude]).addTo(map);
-      var html = '<div style="min-width:180px;">'
-               + '<div style="font-weight:600;margin-bottom:4px;">' + (j.title||"") + '</div>'
-               + '<div style="color:#6b7280;margin-bottom:4px;">' + (j.company||"") + '</div>'
-               + (j.location ? '<div style="color:#6b7280;">' + j.location + '</div>' : '')
-               + '<div style="margin-top:8px;"><a href="' + j.url + '">View Job</a></div>'
-               + '</div>';
-      m.bindPopup(html);
-      bounds.push([j.latitude, j.longitude]);
-    });
-    if (bounds.length) map.fitBounds(bounds, { padding: [24, 24] });
-  });
-  </script>
-
   <!-- Pagination (bottom) -->
   <div class="pagination">
     {% if jobs.has_previous %}
@@ -190,9 +178,7 @@
     {% else %}
       <span class="btn disabled">Previous</span>
     {% endif %}
-    
     <span class="page-info">Page {{ jobs.number }} of {{ jobs.paginator.num_pages }}</span>
-    
     {% if jobs.has_next %}
       <a href="?{% if request.GET.q %}q={{ request.GET.q }}&amp;{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&amp;{% endif %}{% if request.GET.work_type %}work_type={{ request.GET.work_type }}&amp;{% endif %}{% if request.GET.salary_min %}salary_min={{ request.GET.salary_min }}&amp;{% endif %}{% if request.GET.salary_max %}salary_max={{ request.GET.salary_max }}&amp;{% endif %}{% if request.GET.visa_sponsorship %}visa_sponsorship={{ request.GET.visa_sponsorship }}&amp;{% endif %}{% if request.GET.skills %}skills={{ request.GET.skills|urlencode }}&amp;{% endif %}page={{ jobs.next_page_number }}" class="btn">Next</a>
     {% else %}
@@ -207,6 +193,127 @@
     </div>
   </div>
 {% endif %}
+
+{# Commute data hook (no JS in here) #}
+{% if user_commute_location %}
+  <div id="commute-data"
+       data-lat="{{ user_commute_location.lat }}"
+       data-lng="{{ user_commute_location.lng }}"
+       data-radius="{{ user_commute_location.radius }}">
+  </div>
+{% endif %}
+
+<!-- Map -->
+<div id="jobs-map" class="map card" style="height: 320px; margin-top: 24px;"></div>
+{% if jobs_for_map %}{{ jobs_for_map|json_script:"jobs-for-map-data" }}{% endif %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  var container = document.getElementById("jobs-map");
+  if (!container) return;
+
+  var data = [];
+  var el = document.getElementById("jobs-for-map-data");
+  if (el) { try { data = JSON.parse(el.textContent); } catch(e) { console.warn("Bad jobs_for_map JSON", e); } }
+
+  var map = L.map("jobs-map");
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+
+  var bounds = [];
+
+  if (!data || !data.length) {
+    container.insertAdjacentHTML('beforeend', '<div style="padding:12px;color:#6b7280;">No map locations available for these results.</div>');
+    map.setView([37.0902, -95.7129], 4);
+  } else {
+    data.forEach(function(j){
+      if (j.latitude == null || j.longitude == null) return;
+      var m = L.marker([j.latitude, j.longitude]).addTo(map);
+      var html = '<div style="min-width:180px;">'
+               + '<div style="font-weight:600;margin-bottom:4px;">' + (j.title||"") + '</div>'
+               + '<div style="color:#6b7280;margin-bottom:4px;">' + (j.company||"") + '</div>'
+               + (j.location ? '<div style="color:#6b7280;">' + j.location + '</div>' : '')
+               + '<div style="margin-top:8px;"><a href="' + j.url + '">View Job</a></div>'
+               + '</div>';
+      m.bindPopup(html);
+      bounds.push([j.latitude, j.longitude]);
+    });
+    if (bounds.length) map.fitBounds(bounds, { padding: [24, 24] });
+  }
+
+  // BLUE device-based radius from URL params
+  const q = new URLSearchParams(window.location.search);
+  const deviceLat = parseFloat(q.get("lat"));
+  const deviceLng = parseFloat(q.get("lng"));
+  const deviceRadius = parseFloat(q.get("radius") || "0");
+  if (!isNaN(deviceLat) && !isNaN(deviceLng) && !isNaN(deviceRadius) && deviceRadius > 0) {
+    L.marker([deviceLat, deviceLng]).addTo(map).bindPopup("Your location");
+    L.circle([deviceLat, deviceLng], { radius: deviceRadius * 1609.34 }).addTo(map);
+    bounds.push([deviceLat, deviceLng]);
+  }
+
+  // RED commute radius from profile (via #commute-data)
+  const commuteHook = document.getElementById("commute-data");
+  if (commuteHook) {
+    const commuteLat = parseFloat(commuteHook.getAttribute("data-lat"));
+    const commuteLng = parseFloat(commuteHook.getAttribute("data-lng"));
+    const commuteRadius = parseFloat(commuteHook.getAttribute("data-radius"));
+    if (!isNaN(commuteLat) && !isNaN(commuteLng) && !isNaN(commuteRadius) && commuteRadius > 0) {
+      L.circle([commuteLat, commuteLng], {
+        radius: commuteRadius * 1609.34,
+        color: "#ef4444",
+        weight: 2,
+        fillColor: "#ef4444",
+        fillOpacity: 0.15
+      }).addTo(map);
+      L.marker([commuteLat, commuteLng]).addTo(map).bindPopup("Commute origin (profile)");
+      bounds.push([commuteLat, commuteLng]);
+    }
+  }
+
+  if (bounds.length) map.fitBounds(bounds, { padding: [24, 24] });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const latInput = document.getElementById('id_lat');
+  const lngInput = document.getElementById('id_lng');
+
+  const tryGeolocate = () => {
+    if (!latInput || !lngInput) return;
+    if (latInput.value && lngInput.value) return;
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        latInput.value = pos.coords.latitude.toFixed(6);
+        lngInput.value = pos.coords.longitude.toFixed(6);
+      },
+      () => { /* ignore errors—user may block location */ },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+  tryGeolocate();
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const details = document.querySelector('details.filters-section');
+  if (!details) return;
+
+  // Restore last state
+  const saved = localStorage.getItem('jobFiltersOpen');
+  if (saved === 'true') details.setAttribute('open', '');
+  if (saved === 'false') details.removeAttribute('open');
+
+  // Save on toggle
+  details.addEventListener('toggle', () => {
+    localStorage.setItem('jobFiltersOpen', details.open ? 'true' : 'false');
+  });
+});
+</script>
 
 <style>
 .search-header { margin-bottom: 24px; }
@@ -240,25 +347,21 @@
 
 .pagination { display: flex; align-items: center; justify-content: space-between; margin: 16px 0; }
 
-/* Button palette for this page (match global palette) */
 .btn {
-  background: #2563eb;               /* blue, not black */
+  background: #2563eb;
   color: #fff;
   padding: 8px 12px;
   border-radius: 8px;
   text-decoration: none;
-  border: 1px solid #2563eb;         /* ensure outline matches on hover borders */
+  border: 1px solid #2563eb;
 }
 .btn:hover { opacity: 0.9; }
-
 .btn-outline {
   background: transparent;
-  color: #2563eb;                    /* blue text */
-  border: 1px solid #2563eb;         /* blue border */
+  color: #2563eb;
+  border: 1px solid #2563eb;
 }
-
 .btn.disabled { opacity: 0.5; pointer-events: none; }
-
 
 .page-info { padding: 8px 12px; color: #6b7280; }
 
@@ -266,19 +369,39 @@
 .no-results-content { text-align: center; }
 .no-results h3 { color: #374151; margin-bottom: 8px; }
 
-.filters-grid {
+.filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: start; }
+
+/* 50/50 Skills | Radius */
+.skills-radius-row {
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
-  align-items: start; /* added */
+}
+
+/* Commute Distance | Clear All (right) */
+.commute-clear-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: end;
 }
 
 @media (max-width: 768px) {
+  .skills-radius-row { grid-template-columns: 1fr; }
+  .commute-clear-row { grid-template-columns: 1fr; }
   .search-row { grid-template-columns: 1fr; }
   .filters-grid { grid-template-columns: 1fr; }
   .job-meta { flex-direction: column; align-items: flex-start; gap: 8px; }
   .job-info { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
-.applied-badge { position: absolute; right: 12px; bottom: 12px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; padding: 4px 8px; font-weight: 600; font-size: 0.8rem; color: #374151; }
+
+.applied-badge {
+  position: absolute; right: 12px; bottom: 12px;
+  background: #f3f4f6; border: 1px solid #e5e7eb;
+  border-radius: 8px; padding: 4px 8px; font-weight: 600;
+  font-size: 0.8rem; color: #374151;
+}
 </style>
 {% endblock %}
