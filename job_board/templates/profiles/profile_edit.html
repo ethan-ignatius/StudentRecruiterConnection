@@ -403,10 +403,11 @@
         </template>
       </section>
 
-      <p style="margin-top:16px;">
-        <input class="btn" type="submit" value="Save changes" id="save-btn">
-        <a class="btn btn-outline" href="{% url 'profiles:my_profile' %}" style="margin-left:8px;">Cancel</a>
-      </p>
+      <div class="u-actions u-actions--left" style="margin-top:12px">
+        <button type="submit" class="btn btn-primary u-btn-same u-btn-eq">Save Changes</button>
+        <a href="{% url 'profiles:my_profile' %}" class="btn btn-outline u-btn-same u-btn-eq">Cancel</a>
+      </div>
+
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

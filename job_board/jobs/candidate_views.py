@@ -112,9 +112,11 @@ def save_candidate_search(request):
     
     if form.is_valid():
         saved_search = form.save(commit=False)
-        saved_search.recruiter = request.user  # keep your existing assignment
-
-        # DB-level safety net (in case of a race or manual tampering)
+        saved_search.recruiter = request.user
+        # persist ONLY the name filter by encoding it into `skills`
+        q_val = (search_params.get('q') or '').strip()
+        if q_val:
+            saved_search.skills = f"Name: {q_val}"
         try:
             saved_search.save()
         except IntegrityError:

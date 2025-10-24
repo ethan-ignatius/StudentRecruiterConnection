@@ -241,5 +241,62 @@ ul.skills-list li.skill-tag {
   background: #e5e7eb; color: #111827;
   border-radius: 9999px; padding: 6px 12px;
   font-size: .9rem; font-weight: 500; display: inline-block;
-  
 }
+
+.u-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.u-actions--right{justify-content:flex-end}
+.u-actions--left{justify-content:flex-start}
+
+/* equal-width buttons */
+.u-btn-wide{min-width:200px}   /* header pills */
+.u-btn-same{min-width:160px}   /* per-card + form buttons */
+
+/* ensure <a> and <button> center text the same */
+button, .btn, .button, .btn-primary, .btn-outline{
+  display:inline-flex;align-items:center;justify-content:center;text-align:center
+}
+
+.u-btn-eq{
+  --btn-h: 42px;               /* tweak if you want taller/shorter */
+  height: var(--btn-h);
+  padding: 0 18px !important;  /* remove vertical padding differences */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;              /* prevent text from affecting height */
+  box-sizing: border-box;      /* include borders inside the height */
+}
+
+/* Compact, left-aligned action row for each notification card */
+.notif-btn-row{
+  /* tweak width once here if you want them narrower/wider */
+  --notif-btn-w: 160px;
+
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;   /* left align */
+  align-items: center;
+
+  /* space from the content/line above */
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* make both buttons identical size */
+.notif-btn-row a.btn,
+.notif-btn-row button.btn{
+  width: var(--notif-btn-w) !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  border-width: 1px !important;
+}
+
+.notif-btn-row form{ margin: 0; }
+
