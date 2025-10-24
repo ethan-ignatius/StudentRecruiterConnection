@@ -13,6 +13,11 @@ class JobSearchForm(forms.Form):
         }),
         label="Search"
     )
+
+    filter_by_radius = forms.BooleanField(
+        required=False,
+        label="Only show jobs within this radius"
+    )
     
     location = forms.CharField(
         required=False,
@@ -60,10 +65,22 @@ class JobSearchForm(forms.Form):
     visa_sponsorship = forms.TypedChoiceField(
         required=False,
         label="Visa sponsorship",
-        choices=((True, "Yes"), (False, "No")),
-        coerce=lambda v: v in (True, "True", "true", "1", "on", "yes", "y"),
+        choices=(("", "Any"), (True, "Yes"), (False, "No")),
+        coerce=lambda v: None if v in ("", None) else v in (True, "True", "true", "1", "on", "yes", "y"),
+        empty_value=None,
         widget=forms.Select()
     )
+
+    lat = forms.FloatField(required=False, widget=forms.HiddenInput())
+    lng = forms.FloatField(required=False, widget=forms.HiddenInput())
+
+    radius = forms.IntegerField(
+        required=False, min_value=1, max_value=200, initial=10,
+        label="Radius (miles)",
+        widget=forms.NumberInput(attrs={"placeholder": "10"})
+    )
+
+    sort_by_distance = forms.BooleanField(required=False, label="Sort by distance")
     
     def clean_skills(self):
         skills_text = self.cleaned_data.get('skills', '').strip()
@@ -81,6 +98,16 @@ class JobSearchForm(forms.Form):
         
         if salary_min and salary_max and salary_min > salary_max:
             raise forms.ValidationError("Minimum salary cannot be greater than maximum salary.")
+        
+        lat = cleaned_data.get("lat")
+        lng = cleaned_data.get("lng")
+        sort  = cleaned_data.get("sort_by_distance")
+        filt  = cleaned_data.get("filter_by_radius")
+        # only if any distance feature is requested do we care about coords
+        if (sort or filt) and (lat is None or lng is None):
+            self.add_error(None, "Your location is needed for distance features. Please allow location access.")
+        if cleaned_data.get("radius") is None:
+            cleaned_data["radius"] = 10
         
         return cleaned_data
 

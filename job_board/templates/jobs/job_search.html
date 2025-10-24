@@ -69,9 +69,32 @@
           {{ form.skills }}
           {% if form.skills.errors %}<ul class="errorlist">{% for error in form.skills.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
         </div>
+        {# Hidden location fields (kept for GET) #}
+        {{ form.lat }}
+        {{ form.lng }}
+        <span style="display:none;">{{ form.radius }}</span>
+
+        <div class="distance-row">
+          <label class="inline-control">
+            {{ form.sort_by_distance }}
+            <span>Sort by distance</span>
+          </label>
+
+          <label class="distance-label" for="radiusRange">Radius (miles):</label>
+          <input id="radiusRange" type="range" min="1" max="200" step="1"
+                value="{{ form.data.radius|default:form.fields.radius.initial|default:'25' }}">
+          <strong class="radius-value"><span id="radiusVal">
+            {{ form.data.radius|default:form.fields.radius.initial|default:'25' }}
+          </span> mi</strong>
+
+          <label class="inline-control">
+            {{ form.filter_by_radius }}
+            <span>Only show jobs within this radius</span>
+          </label>
+        </div>
       </div>
     </details>
-    
+
     {% if has_filters %}
       <div class="active-filters">
         <a href="{% url 'jobs:search' %}" class="clear-filters">Clear all filters</a>
@@ -180,8 +203,58 @@
       bounds.push([j.latitude, j.longitude]);
     });
     if (bounds.length) map.fitBounds(bounds, { padding: [24, 24] });
+    const q = new URLSearchParams(window.location.search);
+    const lat = parseFloat(q.get("lat"));
+    const lng = parseFloat(q.get("lng"));
+    const radius = parseFloat(q.get("radius") || "0");
+    if (!isNaN(lat) && !isNaN(lng) && !isNaN(radius) && radius > 0) {
+      const m = L.marker([lat, lng]).addTo(map).bindPopup("Your location");
+      const circle = L.circle([lat, lng], { radius: radius * 1609.34 }); 
+      circle.addTo(map);
+      bounds.push([lat, lng]);
+      if (bounds.length) map.fitBounds(bounds, { padding: [24, 24] });
+    }
   });
   </script>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const slider        = document.getElementById('radiusRange');
+    const radiusHidden  = document.getElementById('id_radius');
+    const radiusLabel   = document.getElementById('radiusVal');
+    const latInput      = document.getElementById('id_lat');
+    const lngInput      = document.getElementById('id_lng');
+    const sortCb        = document.getElementById('id_sort_by_distance');
+    const filterCb      = document.getElementById('id_filter_by_radius');
+
+    const syncRadius = () => {
+      if (slider && radiusHidden) {
+        radiusHidden.value = slider.value;
+        if (radiusLabel) radiusLabel.textContent = slider.value;
+      }
+    };
+    syncRadius();
+    if (slider) {
+      slider.addEventListener('input', syncRadius);
+    }
+
+    const tryGeolocate = () => {
+      if (!latInput || !lngInput) return;
+      if (latInput.value && lngInput.value) return;
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          latInput.value = pos.coords.latitude.toFixed(6);
+          lngInput.value = pos.coords.longitude.toFixed(6);
+        },
+        () => { /* ignore errors—user may block location */ },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    };
+    tryGeolocate();
+  });
+  </script>
+
+
 
   <!-- Pagination (bottom) -->
   <div class="pagination">
@@ -237,6 +310,9 @@
 .visa { background: #ecfdf5; color: #065f46; padding: 4px 8px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; }
 
 .job-actions { margin-top: 12px; display: flex; gap: 8px; }
+
+.inline-control { display:flex; align-items:center; gap:.5rem; }
+input[type="checkbox"] { transform: scale(1.2); accent-color:#2563eb; }
 
 .pagination { display: flex; align-items: center; justify-content: space-between; margin: 16px 0; }
 

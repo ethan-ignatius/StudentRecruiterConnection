@@ -10,58 +10,103 @@ from .models import Job, JobApplication, ApplicationStatusChange
 from django.db.models import Case, When, Value, IntegerField
 from .forms import JobSearchForm, JobForm, JobApplicationForm, QuickApplicationForm, ApplicationStatusForm
 from django.db.models import Prefetch
+from math import radians, sin, cos, asin, sqrt
+from jobs.geocoding import geocode_city_state
 
 # ------------------------------------------------------------
 # Search / discovery
 # ------------------------------------------------------------
+EARTH_MI = 3958.7613
+
+def _ensure_coords(job):
+    """Attach latitude/longitude to a job using its 'City, ST' location."""
+    if getattr(job, "latitude", None) is not None and getattr(job, "longitude", None) is not None:
+        return True
+    loc = (job.location or "").strip()
+    if not loc or "," not in loc:
+        return False
+    city, state = [p.strip() for p in loc.split(",", 1)]
+    coords = geocode_city_state(city, state)  # caches in CityCoord
+    if coords:
+        job.latitude, job.longitude = coords  # attach for this request
+        return True
+    return False
+
+def hav_miles(lat1, lon1, lat2, lon2):
+    dlat = radians(lat2 - lat1); dlon = radians(lon2 - lon1)
+    a = sin(dlat/2)**2 + cos(radians(lat1))*cos(radians(lat2))*sin(dlon/2)**2
+    return 2 * EARTH_MI * asin(sqrt(a))
+
 def job_search(request):
-    form = JobSearchForm(request.GET)
-    jobs_qs = Job.objects.filter(status=Job.Status.ACTIVE).select_related('posted_by')
+    form = JobSearchForm(request.GET or None)
+
+    qs = Job.objects.filter(status=Job.Status.ACTIVE).select_related("posted_by")
 
     if form.is_valid():
-        q = form.cleaned_data.get('q')
-        if q:
-            jobs_qs = jobs_qs.filter(
-                Q(title__icontains=q) |
-                Q(company__icontains=q) |
-                Q(description__icontains=q)
+        cd = form.cleaned_data
+
+        if cd.get("q"):
+            qs = qs.filter(
+                Q(title__icontains=cd["q"]) |
+                Q(company__icontains=cd["q"]) |
+                Q(description__icontains=cd["q"])
             )
 
-        location = form.cleaned_data.get('location')
-        if location:
-            jobs_qs = jobs_qs.filter(location__icontains=location)
+        if cd.get("location"):
+            qs = qs.filter(location__icontains=cd["location"])
 
-        work_type = form.cleaned_data.get('work_type')
-        if work_type:
-            jobs_qs = jobs_qs.filter(work_type=work_type)
+        if cd.get("work_type"):
+            qs = qs.filter(work_type=cd["work_type"])
 
-        min_salary = form.cleaned_data.get('min_salary')
-        if min_salary not in (None, ""):
-            jobs_qs = jobs_qs.filter(salary_min__gte=min_salary)
+        if cd.get("salary_min") not in (None, ""):
+            v = cd["salary_min"]
+            qs = qs.filter(Q(salary_min__gte=v) | Q(salary_max__gte=v))
+        if cd.get("salary_max") not in (None, ""):
+            v = cd["salary_max"]
+            qs = qs.filter(Q(salary_max__lte=v) | Q(salary_min__lte=v))
 
-        max_salary = form.cleaned_data.get('max_salary')
-        if max_salary not in (None, ""):
-            jobs_qs = jobs_qs.filter(Q(salary_max__lte=max_salary) | Q(salary_max__isnull=True))
+        visa = cd.get("visa_sponsorship")
+        if visa is not None:
+            qs = qs.filter(visa_sponsorship=visa)
 
-        visa = form.cleaned_data.get('visa_sponsorship')
-        if visa == 'YES':
-            jobs_qs = jobs_qs.filter(visa_sponsorship=True)
-        elif visa == 'NO':
-            jobs_qs = jobs_qs.filter(visa_sponsorship=False)
-
-        skills = form.cleaned_data.get('skills')
+        skills = cd.get("skills") or []
         if skills:
-            for skill in skills:
-                jobs_qs = jobs_qs.filter(
-                    Q(required_skills__name__iexact=skill) |
-                    Q(nice_to_have_skills__name__iexact=skill)
-                ).distinct()
+            qs = qs.filter(
+                Q(required_skills__name__in=skills) |
+                Q(nice_to_have_skills__name__in=skills)
+            ).distinct()
 
-    jobs_qs = jobs_qs.order_by('-created_at')
+    qs = qs.order_by("-created_at")
 
-    paginator = Paginator(jobs_qs, 5)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    jobs = list(qs)
+    if form.is_valid():
+        lat = form.cleaned_data.get("lat")
+        lng = form.cleaned_data.get("lng")
+        radius = form.cleaned_data.get("radius")            
+        sort_by_distance = form.cleaned_data.get("sort_by_distance")
+        filter_by_radius = form.cleaned_data.get("filter_by_radius")  
+
+        if lat is not None and lng is not None:
+            had_any_geocoded = False
+            for j in jobs:
+                if _ensure_coords(j):
+                    d = hav_miles(lat, lng, j.latitude, j.longitude)
+                    j.distance_miles = round(d, 2)
+                    had_any_geocoded = True
+                else:
+                    j.distance_miles = None  
+
+            if filter_by_radius and had_any_geocoded and radius not in (None, ""):
+                jobs = [
+                    j for j in jobs
+                    if (j.distance_miles is not None and j.distance_miles <= radius)
+                ]
+
+            if sort_by_distance:
+                jobs.sort(key=lambda x: (x.distance_miles is None, x.distance_miles if x.distance_miles is not None else 1e9))
+
+    paginator = Paginator(jobs, 5)
+    page_obj = paginator.get_page(request.GET.get("page"))
 
     jobs_for_map = [
         {
@@ -73,26 +118,33 @@ def job_search(request):
             "latitude": j.latitude,
             "longitude": j.longitude,
         }
-        for j in jobs_qs if j.latitude is not None and j.longitude is not None
+        for j in page_obj.object_list
+        if j.latitude is not None and j.longitude is not None
     ]
 
-    # Mark which jobs on the current page are already applied by this user
     applied_job_ids = set()
-    if request.user.is_authenticated and hasattr(request.user, 'is_job_seeker') and request.user.is_job_seeker():
+    if request.user.is_authenticated and hasattr(request.user, "is_job_seeker") and request.user.is_job_seeker():
         visible_ids = [j.id for j in page_obj.object_list]
         applied_job_ids = set(
-            JobApplication.objects
-            .filter(applicant=request.user, job_id__in=visible_ids)
-            .values_list('job_id', flat=True)
+            JobApplication.objects.filter(applicant=request.user, job_id__in=visible_ids)
+                                  .values_list("job_id", flat=True)
         )
+
+    user_location = None
+    if form.is_valid():
+        lat = form.cleaned_data.get("lat")
+        lng = form.cleaned_data.get("lng")
+        if lat is not None and lng is not None:
+            user_location = {"lat": lat, "lng": lng}
 
     context = {
         "form": form,
         "jobs": page_obj,
         "total_count": paginator.count,
-        "has_filters": any(v for k, v in request.GET.items() if k not in ("page", "search") and v),
+        "has_filters": any(v for k, v in (request.GET or {}).items() if k not in ("page", "search") and v),
         "jobs_for_map": jobs_for_map,
         "applied_job_ids": applied_job_ids,
+        "user_location": user_location,
     }
     return render(request, "jobs/job_search.html", context)
 
