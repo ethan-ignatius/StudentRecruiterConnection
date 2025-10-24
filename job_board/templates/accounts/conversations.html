@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Messages</h2>
+<div class="messaging-container" style="display: flex; gap: 32px;">
+  <div class="conversation-list" style="width: 280px; border-right: 1px solid #eee;">
+    <h4>Conversations</h4>
+    <ul style="list-style: none; padding: 0;">
+      {% for convo in conversations %}
+        <li style="margin-bottom: 12px;">
+          <a href="{% url 'accounts:conversation' convo.other_user.id %}" class="convo-link {% if convo.other_user.id == active_user_id %}active{% endif %}">
+            <strong>{{ convo.other_user.get_full_name|default:convo.other_user.username }}</strong><br>
+            <span style="font-size: 0.9em; color: #888;">{{ convo.last_message|truncatechars:32 }}</span>
+            {% if convo.unread_count > 0 %}
+              <span class="badge" style="background: #2563eb; color: #fff; border-radius: 12px; padding: 2px 8px; font-size: 0.8em; margin-left: 6px;">{{ convo.unread_count }}</span>
+            {% endif %}
+          </a>
+        </li>
+      {% empty %}
+        <li>No conversations yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="conversation-messages" style="flex: 1;">
+    {% if messages_with_user %}
+      <div class="messages-thread" id="messages-thread" style="max-height: 60vh; overflow-y: auto; margin-bottom: 16px;">
+        {% for msg in messages_with_user %}
+          <div class="message-bubble {% if msg.sender == user %}sent{% else %}received{% endif %}" style="margin-bottom: 10px;">
+            <div style="font-size: 0.95em;">
+              <span style="font-weight: bold;">{{ msg.sender.get_full_name|default:msg.sender.username }}</span>
+              <span style="color: #888; font-size: 0.85em; margin-left: 8px;">{{ msg.timestamp|date:'Y-m-d H:i' }}</span>
+            </div>
+            <div style="margin-top: 2px;">{{ msg.content }}</div>
+          </div>
+        {% endfor %}
+      </div>
+      {% if send_success %}
+        <div class="flash success">Message sent!</div>
+      {% endif %}
+      <form method="post" style="display: flex; gap: 8px;">
+        {% csrf_token %}
+        {{ message_form.content }}
+        <input type="hidden" name="recipient" value="{{ active_user_id }}">
+        <button type="submit" class="btn">Send</button>
+      </form>
+      <script>
+        // Auto-scroll to bottom of messages
+        window.onload = function() {
+          var thread = document.getElementById('messages-thread');
+          if (thread) thread.scrollTop = thread.scrollHeight;
+        };
+      </script>
+    {% else %}
+      <p style="color: #888;">Select a conversation to start messaging.</p>
+    {% endif %}
+  </div>
+</div>
+<style>
+.message-bubble.sent {
+  background: #e0e7ff;
+  text-align: right;
+  border-radius: 12px 12px 0 12px;
+  padding: 8px 12px;
+  margin-left: 40px;
+}
+.message-bubble.received {
+  background: #f3f4f6;
+  border-radius: 12px 12px 12px 0;
+  padding: 8px 12px;
+  margin-right: 40px;
+}
+.convo-link.active {
+  background: #f0f9ff;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+.flash.success {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+</style>
+{% endblock %}

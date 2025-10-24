@@ -138,6 +138,10 @@
         
         <div class="candidate-actions" style="margin-top: 12px;">
           <a class="btn" href="{% url 'profiles:public_profile' profile.user.username %}">View Full Profile</a>
+          {% if request.user.is_authenticated and request.user.is_recruiter %}
+            <a class="btn btn-secondary" href="{% url 'accounts:send_message_to' profile.user.id %}">Message Candidate</a>
+            <a class="btn btn-outline" href="{% url 'accounts:send_email_message' profile.user.id %}">Email Candidate</a>
+          {% endif %}
         </div>
       </div>
     {% endfor %}
