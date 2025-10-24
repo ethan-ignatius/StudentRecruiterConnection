@@ -14,14 +14,15 @@
         {% endif %}
       </p>
     </div>
-    <div>
-      {% if unread_count > 0 %}
-        <form method="post" action="{% url 'jobs:mark_all_read' %}" style="display: inline;">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-outline">Mark All as Read</button>
-        </form>
-      {% endif %}
-      <a href="{% url 'jobs:saved_searches' %}" class="btn">Manage Saved Searches</a>
+    <div class="u-actions u-actions--right">
+      <form method="post" action="{% url 'jobs:mark_all_read' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline u-btn-wide u-btn-eq">Mark All as Read</button>
+      </form>
+
+      <a href="{% url 'jobs:saved_searches' %}" class="btn btn-primary u-btn-wide u-btn-eq">
+        Manage Saved Searches
+      </a>
     </div>
   </div>
 
@@ -57,19 +58,16 @@
               </div>
             </div>
             
-            <div class="notification-actions" style="display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
-              <a href="{% url 'jobs:notification_detail' notification.pk %}" class="btn">
+            <div class="notif-btn-row">
+              <a href="{% url 'jobs:notification_detail' notification.pk %}"
+                class="btn btn-primary">
                 View Candidates
               </a>
-              
-              <form method="post" action="{% url 'jobs:mark_notification_read' notification.pk %}" style="display: inline;">
+
+              <form method="post" action="{% url 'jobs:mark_notification_read' notification.pk %}">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-outline">Mark as Read</button>
               </form>
-              
-              <a href="{% url 'jobs:run_saved_search' notification.saved_search.pk %}" class="btn btn-outline">
-                Re-run Search
-              </a>
             </div>
           </div>
         </div>
@@ -134,11 +132,10 @@
   <div class="info-card card" style="margin-top: 32px; background: #f0f9ff; border-left: 4px solid #2563eb;">
     <h3 style="margin: 0 0 12px; font-size: 1rem; color: #1e40af;">💡 How Notifications Work</h3>
     <ul style="margin: 0; padding-left: 24px; line-height: 1.8; color: #1e40af;">
-      <li>Notifications are created when new candidates match your saved searches</li>
-      <li>Run the check command: <code>python manage.py check_candidate_matches</code></li>
-      <li>Set up automated checking with cron/scheduler for continuous monitoring</li>
-      <li>Click "View Candidates" to see the matching profiles</li>
-      <li>Notifications stay here until you mark them as read</li>
+      <li>Turn on notifications for any saved candidate search.</li>
+      <li>When a job seeker updates their profile, we automatically re-check your saved searches.</li>
+      <li>If there’s a match, it appears here. If they update again, the notification is updated to reflect their latest profile.</li>
+      <li>Opening a notification takes you to the matching results and removes it from this list.</li>
     </ul>
   </div>
 </div>
