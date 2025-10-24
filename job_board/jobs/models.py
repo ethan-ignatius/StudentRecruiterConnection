@@ -130,15 +130,14 @@ class Job(models.Model):
 
 class JobApplication(models.Model):
     class Status(models.TextChoices):
-        APPLIED = "APPLIED", "Applied"
+        APPLIED   = "APPLIED",   "Applied"
         REVIEWING = "REVIEWING", "Under Review"
         INTERVIEW = "INTERVIEW", "Interview"
-        OFFER = "OFFER", "Offer Extended"
-        ACCEPTED = "ACCEPTED", "Offer Accepted"
-        REJECTED = "REJECTED", "Not Selected"
-        WITHDRAWN = "WITHDRAWN", "Withdrawn"
+        OFFER     = "OFFER",     "Offer"
+        ACCEPTED  = "ACCEPTED",  "Accepted"
+        REJECTED  = "REJECTED",  "Not Selected"
 
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="applications")
+    job = models.ForeignKey("jobs.Job", on_delete=models.CASCADE, related_name="applications")
     applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="job_applications")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.APPLIED)
     cover_letter = models.TextField(blank=True, help_text="Optional personalized message")
@@ -148,6 +147,17 @@ class JobApplication(models.Model):
     # Status tracking fields
     status_notes = models.TextField(blank=True, help_text="Internal notes about status changes")
     last_status_change = models.DateTimeField(auto_now=True)
+
+    def get_status_help_text(self) -> str:
+        mapping = {
+            self.Status.APPLIED:   "Application submitted",
+            self.Status.REVIEWING: "Being evaluated by employer",
+            self.Status.INTERVIEW: "Interview scheduled or completed",
+            self.Status.OFFER:     "Job offer extended",
+            self.Status.ACCEPTED:  "Congratulations! 🎉",
+            self.Status.REJECTED:  "Position filled by another candidate",
+        }
+        return mapping.get(self.status, "")
     
     class Meta:
         unique_together = ["job", "applicant"]
@@ -171,7 +181,6 @@ class JobApplication(models.Model):
             self.Status.OFFER: "status-offer",
             self.Status.ACCEPTED: "status-accepted",
             self.Status.REJECTED: "status-rejected",
-            self.Status.WITHDRAWN: "status-withdrawn",
         }
         return status_classes.get(self.status, "status-default")
     

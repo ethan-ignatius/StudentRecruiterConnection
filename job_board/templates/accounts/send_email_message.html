@@ -1,17 +1,41 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Email Candidate</h2>
+
 <form method="post">
   {% csrf_token %}
+
   <div class="field">
     <label for="subject">Subject</label>
     <input type="text" name="subject" id="subject" required placeholder="Subject">
   </div>
+
   <div class="field">
     <label for="content">Message</label>
     <textarea name="content" id="content" rows="6" required placeholder="Type your email message here..."></textarea>
   </div>
-  <button type="submit" class="btn">Send Email</button>
+
+  <!-- Actions row: same look/height as Send Message -->
+  <div class="actions-row" style="display:flex; gap:10px; align-items:center; justify-content:flex-start; margin-top:8px;">
+    <button type="submit" class="btn">Send Email</button>
+    <a href="{% url 'accounts:inbox' %}" class="btn btn-outline">Back to Inbox</a>
+  </div>
 </form>
-<a href="{% url 'accounts:inbox' %}">Back to Inbox</a>
+
+<style>
+  /* add space between Subject and Message */
+  .field { margin-bottom: 12px; }
+  .field label { display:block; margin-bottom: 6px; }
+  .field input[type="text"], .field textarea { width: 100%; }
+
+  /* match button heights (same as Send Message) */
+  .actions-row .btn {
+    height: 44px;
+    min-height: 44px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
+</style>
 {% endblock %}

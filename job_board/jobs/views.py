@@ -12,6 +12,7 @@ from .forms import JobSearchForm, JobForm, QuickApplicationForm, ApplicationStat
 from django.db.models import Prefetch
 from math import radians, sin, cos, asin, sqrt
 from jobs.geocoding import geocode_city_state
+from django.utils import timezone
 
 # ------------------------------------------------------------
 # Search / discovery
@@ -347,6 +348,47 @@ def my_jobs(request):
         'paginator': paginator,  # optional
     })
 
+@login_required
+def my_applications(request):
+    """
+    Job seeker dashboard: list the current user's job applications,
+    grouped by status, newest first.
+    """
+    # Recruiters shouldn't land here; bounce them to their dashboard
+    # (User model exposes is_recruiter() in this project)
+    if hasattr(request.user, "is_recruiter") and request.user.is_recruiter():
+        messages.info(request, "Recruiters manage postings; showing your jobs instead.")
+        return redirect("jobs:my_jobs")
+
+    applications = (
+        JobApplication.objects
+        .select_related("job")
+        .filter(applicant=request.user)
+        .order_by("-applied_at")
+    )
+
+    # Group apps by status for the template's quick stats/cards
+    status_order = [
+        JobApplication.Status.APPLIED,
+        JobApplication.Status.REVIEWING,
+        JobApplication.Status.INTERVIEW,
+        JobApplication.Status.OFFER,
+        JobApplication.Status.ACCEPTED,
+        JobApplication.Status.REJECTED,
+    ]
+    status_groups = {status: [] for status in status_order}
+    for app in applications:
+        status_groups.setdefault(app.status, []).append(app)
+
+    return render(
+        request,
+        "jobs/my_applications.html",
+        {
+            "applications": applications,
+            "status_groups": status_groups,
+        },
+    )
+
 
 @login_required
 # job_board/jobs/views.py (function replaced)
@@ -370,7 +412,6 @@ def job_applications(request, pk):
         JobApplication.Status.OFFER,
         JobApplication.Status.ACCEPTED,
         JobApplication.Status.REJECTED,
-        JobApplication.Status.WITHDRAWN,
     ]
     status_groups = {status: [] for status in status_order}
     for app in applications:
@@ -386,58 +427,83 @@ def job_applications(request, pk):
 
 @login_required
 def application_detail(request, pk):
-    from django.db.models import Prefetch  # local import to keep other files untouched
-
-    # Fetch application + applicant profile + related info
     application = (
         JobApplication.objects
         .select_related('job', 'applicant', 'applicant__profile')
-        .prefetch_related(
-            Prefetch('applicant__profile__experiences'),
-            Prefetch('applicant__profile__educations'),
-            Prefetch('applicant__profile__links'),
-        )
         .get(pk=pk)
     )
-
-    # Permission: applicant themselves OR the recruiter who owns the job
-    if not (application.applicant == request.user or application.job.posted_by == request.user):
+    is_recruiter_owner = (request.user == application.job.posted_by)
+    is_applicant_owner = (request.user == application.applicant)
+    if not (is_recruiter_owner or is_applicant_owner):
         raise Http404("Application not found")
 
-    # Build the status form (only recruiters can submit changes)
-    if request.method == 'POST' and request.user == application.job.posted_by:
-        form = ApplicationStatusForm(request.POST, instance=application)
+    if request.method == 'POST' and is_recruiter_owner:
+        form = ApplicationStatusForm(request.POST, instance=application, request_user=request.user)
         if form.is_valid():
-            old_status = application.status
-            application = form.save()
-            ApplicationStatusChange.objects.create(
-                application=application,
-                old_status=old_status,
-                new_status=application.status,
-                changed_by=request.user,
-                notes='Status updated by recruiter'
-            )
-            messages.success(request, "Application status updated.")
-            return redirect('jobs:application_detail', pk=application.pk)
-    else:
-        form = ApplicationStatusForm(instance=application)
+            new_status = form.cleaned_data['status']
+            if new_status == JobApplication.Status.ACCEPTED:
+                messages.error(request, "Recruiters can’t mark as Accepted. Ask the candidate to accept the offer.")
+                return redirect('jobs:application_detail', pk=application.pk)
 
-    # History unchanged
+            old_status = application.status
+            if new_status != old_status:
+                # Use direct update + refresh to avoid any weird resets
+                JobApplication.objects.filter(pk=application.pk).update(
+                    status=new_status, updated_at=timezone.now()
+                )
+                application.refresh_from_db()
+                ApplicationStatusChange.objects.create(
+                    application=application,
+                    old_status=old_status,
+                    new_status=new_status,
+                    changed_by=request.user,
+                    notes='Status updated by recruiter'
+                )
+                messages.success(request, f"Status updated to {application.get_status_display()}.")
+        else:
+            messages.error(request, "Please fix the errors below.")
+
+        return redirect('jobs:application_detail', pk=application.pk)
+    else:
+        form = ApplicationStatusForm(instance=application, request_user=request.user) if is_recruiter_owner else None
+
     history = ApplicationStatusChange.objects.filter(application=application).order_by('changed_at')
 
-    # IMPORTANT: pass the same context the Seeker profile view uses
     return render(request, 'jobs/application_detail.html', {
         'application': application,
-        'form': form,  # now always defined
+        'form': form,
         'history': history,
-        # Keep the original variable for compatibility with any existing template references
-        'applicant_profile': getattr(application.applicant, 'profile', None),
-        # Provide the exact context used by Seeker profile
-        'profile': getattr(application.applicant, 'profile', None),
-        'experiences_qs': getattr(application.applicant, 'profile', None).experiences.filter(show=True) if getattr(application.applicant, 'profile', None) else [],
-        'educations_qs': getattr(application.applicant, 'profile', None).educations.filter(show=True) if getattr(application.applicant, 'profile', None) else [],
-        'links_qs': getattr(application.applicant, 'profile', None).links.filter(show=True) if getattr(application.applicant, 'profile', None) else [],
     })
+
+@login_required
+@require_POST
+def accept_offer(request, pk):
+    application = get_object_or_404(JobApplication, pk=pk)
+
+    # Only the applicant can accept
+    if request.user != application.applicant:
+        raise Http404("Application not found")
+
+    if application.status != JobApplication.Status.OFFER:
+        messages.error(request, "You can only accept an active offer.")
+        return redirect('jobs:application_detail', pk=application.pk)
+
+    old_status = application.status
+    JobApplication.objects.filter(pk=application.pk).update(
+        status=JobApplication.Status.ACCEPTED, updated_at=timezone.now()
+    )
+    application.refresh_from_db()
+
+    ApplicationStatusChange.objects.create(
+        application=application,
+        old_status=old_status,
+        new_status=JobApplication.Status.ACCEPTED,
+        changed_by=request.user,
+        notes="Candidate accepted the offer"
+    )
+    messages.success(request, "Offer accepted. 🎉")
+    return redirect('jobs:application_detail', pk=application.pk)
+
 
 @login_required
 def edit_job(request, pk):
@@ -478,3 +544,75 @@ def reopen_job(request, pk):
         job.save(update_fields=['status'])
         messages.success(request, "Job reopened and visible to job seekers.")
     return redirect('jobs:my_jobs')
+
+# job_board/jobs/views.py  (add anywhere below the view above)
+@login_required
+@require_POST
+def accept_offer(request, pk):
+    application = get_object_or_404(JobApplication, pk=pk)
+
+    # Only the applicant can accept
+    if request.user != application.applicant:
+        raise Http404("Application not found")
+
+    if application.status != JobApplication.Status.OFFER:
+        messages.error(request, "You can only accept an active offer.")
+        return redirect('jobs:application_detail', pk=application.pk)
+
+    old_status = application.status
+    application.status = JobApplication.Status.ACCEPTED
+    application.save(update_fields=['status', 'updated_at'])
+
+    ApplicationStatusChange.objects.create(
+        application=application,
+        old_status=old_status,
+        new_status=JobApplication.Status.ACCEPTED,
+        changed_by=request.user,
+        notes="Candidate accepted the offer"
+    )
+
+    messages.success(request, "Offer accepted. 🎉")
+    return redirect('jobs:application_detail', pk=application.pk)
+
+@login_required
+@require_POST
+def update_application_status(request, pk):
+    """Recruiter-only: set application status (cannot set Accepted)."""
+    application = get_object_or_404(JobApplication, pk=pk)
+
+    # only the job owner can update
+    if request.user != application.job.posted_by:
+        raise Http404("Application not found")
+
+    new_status = request.POST.get("status")
+
+    # recruiters CANNOT set Accepted; everything else is ok
+    allowed = {
+        JobApplication.Status.APPLIED,
+        JobApplication.Status.REVIEWING,
+        JobApplication.Status.INTERVIEW,
+        JobApplication.Status.OFFER,
+        JobApplication.Status.REJECTED,
+    }
+    if new_status not in allowed:
+        messages.error(request, "Invalid status selection.")
+        return redirect('jobs:application_detail', pk=application.pk)
+
+    old_status = application.status
+    if new_status != old_status:
+        # write directly to DB, then refresh the instance we render
+        JobApplication.objects.filter(pk=application.pk).update(
+            status=new_status, updated_at=timezone.now()
+        )
+        application.refresh_from_db()
+
+        ApplicationStatusChange.objects.create(
+            application=application,
+            old_status=old_status,
+            new_status=new_status,
+            changed_by=request.user,
+            notes='Status updated by recruiter'
+        )
+        messages.success(request, f"Status updated to {application.get_status_display()}.")
+
+    return redirect('jobs:application_detail', pk=application.pk)

@@ -1,10 +1,27 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Send Message</h2>
+
 <form method="post">
   {% csrf_token %}
   {{ form.as_p }}
-  <button type="submit">Send</button>
+
+  <!-- Actions -->
+  <div class="actions-row" style="display:flex; gap:10px; align-items:center; justify-content:flex-start; margin-top:8px;">
+    <button type="submit" class="btn">Send</button>
+    <a href="{% url 'accounts:inbox' %}" class="btn btn-outline">Back to Inbox</a>
+  </div>
 </form>
-<a href="{% url 'accounts:inbox' %}">Back to Inbox</a>
+
+<style>
+  /* make both buttons exactly the same height */
+  .actions-row .btn {
+    height: 44px;           /* match site-wide button height */
+    min-height: 44px;
+    padding: 0 14px;        /* keep text vertically centered */
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
+</style>
 {% endblock %}

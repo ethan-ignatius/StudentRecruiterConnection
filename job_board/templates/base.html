@@ -38,9 +38,14 @@
               {% endif %}
             </a>
           {% else %}
-            <a href="{% url 'jobs:my_jobs' %}">My Applications</a>
+            <a href="{% url 'jobs:my_applications' %}">My Applications</a>
           {% endif %}
           <a href="{% url 'accounts:conversations' %}">Messages</a>
+
+          {% if user.is_recruiter %}
+            <a href="{% url 'accounts:inbox' %}">Inbox</a>
+          {% endif %}
+
           <form method="post" action="{% url 'logout' %}" style="display:inline;">
             {% csrf_token %}
             <button class="btn btn-outline" type="submit">Logout</button>

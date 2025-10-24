@@ -9,6 +9,7 @@ urlpatterns = [
     path("", views.job_search, name="search"),
     path("post/", views.post_job, name="post"),
     path("my-jobs/", views.my_jobs, name="my_jobs"),
+    path("my-applications/", views.my_applications, name="my_applications"),
     path("<int:pk>/", views.job_detail, name="detail"),
     path("<int:pk>/quick-apply/", views.quick_apply, name="quick_apply"),
     path("<int:pk>/edit/", views.edit_job, name="edit"),
@@ -16,7 +17,9 @@ urlpatterns = [
     path("application/<int:pk>/", views.application_detail, name="application_detail"),
     path("<int:pk>/close/", views.close_job, name="close"),
     path("<int:pk>/reopen/", views.reopen_job, name="reopen"),
-
+    path("application/<int:pk>/accept/", views.accept_offer, name="application_accept"),
+    path("application/<int:pk>/status/", views.update_application_status, name="application_status_update"),
+    
     # Candidate Search URLs
     path("candidates/", candidate_views.candidate_search, name="candidate_search"),
     path("candidates/save-search/", candidate_views.save_candidate_search, name="save_candidate_search"),

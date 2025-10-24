@@ -27,7 +27,7 @@ def signup(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect(reverse("login"))
+            return redirect(reverse("home"))
     else:
         form = SignupForm()
     return render(request, "accounts/signup.html", {"form": form})
@@ -56,19 +56,28 @@ def inbox(request):
 @login_required
 def send_message(request, recipient_id=None):
     if request.method == 'POST':
-        form = MessageForm(request.POST)
+        form = MessageForm(request.POST, sender=request.user)   # ⬅️ pass sender
         if form.is_valid():
             message = form.save(commit=False)
             message.sender = request.user
+
+            # defense-in-depth: block crafted POSTs
+            if message.recipient_id == request.user.id:
+                form.add_error('recipient', "You can’t send a message to yourself.")
+                return render(request, 'accounts/send_message.html', {'form': form})
+
             message.save()
-            # Do NOT send email here; platform messages only
             django_messages.success(request, 'Message sent successfully!')
             return redirect('accounts:inbox')
     else:
         initial = {}
         if recipient_id:
             initial['recipient'] = User.objects.get(id=recipient_id)
-        form = MessageForm(initial=initial)
+            # Optional: block if trying to prefill yourself
+            if recipient_id == request.user.id:
+                django_messages.error(request, "You can’t message yourself.")
+                return redirect('accounts:inbox')
+        form = MessageForm(initial=initial, sender=request.user)  # ⬅️ pass sender
     return render(request, 'accounts/send_message.html', {'form': form})
 
 @login_required

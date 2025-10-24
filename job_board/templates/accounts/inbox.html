@@ -24,5 +24,7 @@
     <li>No messages sent.</li>
   {% endfor %}
 </ul>
-<a href="{% url 'accounts:send_message' %}">Send a new message</a>
+<div style="margin-top:16px;">
+  <a class="btn" href="{% url 'accounts:send_message' %}">Send another message</a>
+</div>
 {% endblock %}

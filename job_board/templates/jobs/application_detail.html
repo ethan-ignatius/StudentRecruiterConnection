@@ -43,22 +43,25 @@
         </span>
       </div>
       <div>
-        <strong style="color: #374151;">Application Status:</strong><br>
+        <strong style="color:#374151;">Application Status:</strong><br>
         <span class="status-badge" style="
-          {% if application.status == application.Status.PENDING %}
+          {% if application.status == 'APPLIED' %}
             background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe;
-          {% elif application.status == application.Status.REVIEWING %}
-            background:#fef9c3;color:#854d0e;border:1px solid #fde68a;
-          {% elif application.status == application.Status.INTERVIEW %}
-            background:#f3e8ff;color:#6b21a8;border:1px solid #e9d5ff;
-          {% elif application.status == application.Status.REJECTED %}
-            background:#fee2e2;color:#991b1b;border:1px solid #fecaca;
-          {% elif application.status == application.Status.HIRED %}
+          {% elif application.status == 'REVIEWING' %}
+            background:#fef3c7;color:#92400e;border:1px solid #fde68a;
+          {% elif application.status == 'INTERVIEW' %}
+            background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe;
+          {% elif application.status == 'OFFER' %}
+            background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;
+          {% elif application.status == 'ACCEPTED' %}
             background:#dcfce7;color:#166534;border:1px solid #bbf7d0;
+          {% elif application.status == 'REJECTED' %}
+            background:#fee2e2;color:#991b1b;border:1px solid #fecaca;
           {% endif %}
         ">
           {{ application.get_status_display }}
         </span>
+        <p style="margin:6px 0 0;color:#6b7280;">{{ application.get_status_help_text }}</p>
       </div>
     </div>
 
@@ -85,13 +88,16 @@
     {% endif %}
 
     {% if request.user == application.job.posted_by %}
-      <!-- narrowed select + wider button; centered horizontally -->
-      <form method="post" class="application-status-form" style="display:flex; gap: 10px; align-items:center; justify-content:center; width:100%; margin-top:16px;">
+      <form method="post"
+            action="{% url 'jobs:application_status_update' application.pk %}"
+            class="application-status-form"
+            style="display:flex; gap:10px; align-items:center; justify-content:center; width:100%; margin-top:16px;">
         {% csrf_token %}
         {{ form.status }}
         <button class="btn" type="submit">Update Status</button>
       </form>
     {% endif %}
+
   </div>
 
   <!-- Applicant Profile (second) -->
@@ -127,6 +133,12 @@
     </div>
   {% endif %}
 
+  {% if request.user == application.applicant and application.status == 'OFFER' %}
+    <form method="post" action="{% url 'jobs:application_accept' application.pk %}" style="margin-top:12px;">
+      {% csrf_token %}
+      <button class="btn" type="submit">Accept Offer</button>
+    </form>
+  {% endif %}
 </div>
 
 <style>

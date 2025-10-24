@@ -330,7 +330,6 @@ class JobApplicationForm(forms.ModelForm):
         self.fields['cover_letter'].label = "Cover Letter"
         self.fields['cover_letter'].help_text = "Tell the employer about your interest and qualifications"
 
-
 class ApplicationStatusForm(forms.ModelForm):
     """Form for recruiters to update application status"""
     notes = forms.CharField(
@@ -346,12 +345,25 @@ class ApplicationStatusForm(forms.ModelForm):
     class Meta:
         model = JobApplication
         fields = ['status']
-        widgets = {
-            'status': forms.Select(attrs={
-                'class': 'status-select'
-            })
-        }
-    
+        widgets = {'status': forms.Select(attrs={'class': 'status-select'})}
+
     def __init__(self, *args, **kwargs):
+        self.request_user = kwargs.pop('request_user', None)
         super().__init__(*args, **kwargs)
         self.fields['status'].label = "Application Status"
+
+        # Recruiters cannot set Accepted directly
+        if self.request_user and hasattr(self.request_user, "is_recruiter") and self.request_user.is_recruiter():
+            self.fields['status'].choices = [
+                (val, label)
+                for val, label in self.fields['status'].choices
+                if val != JobApplication.Status.ACCEPTED
+            ]
+
+    def clean_status(self):
+        val = self.cleaned_data['status']
+        if (self.request_user and hasattr(self.request_user, "is_recruiter")
+            and self.request_user.is_recruiter()
+            and val == JobApplication.Status.ACCEPTED):
+            raise forms.ValidationError("Recruiters can’t mark an application as Accepted.")
+        return val
