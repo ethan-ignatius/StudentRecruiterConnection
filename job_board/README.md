@@ -1,5 +1,5 @@
 To load dummy jobs run the following (in the job board directory)
-python manage.py migrate (if db.sqlite3 doesn't exist)
+python manage.py migrate
 python manage.py loaddata .\dummy_jobs.json
 
 Has seeker1, seeker2, recruiter1, recruiter2, the password forall of them is 'Hellothere142857'

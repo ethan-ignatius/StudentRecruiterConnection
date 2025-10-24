@@ -80,6 +80,36 @@ def job_search(request):
     qs = qs.order_by("-created_at")
     jobs = list(qs)
 
+    if form.is_valid():
+        radius = form.cleaned_data.get("radius")
+        lat = form.cleaned_data.get("lat")
+        lng = form.cleaned_data.get("lng")
+
+        if radius not in (None, "") and lat is not None and lng is not None:
+            had_any_geocoded = False
+
+            for j in jobs:
+                # Treat fully-remote as 0 miles so they always pass distance filters
+                if getattr(j, "work_type", None) == Job.WorkType.REMOTE:
+                    j.distance_from_device = 0.0
+                    had_any_geocoded = True
+                    continue
+
+                # Ensure the job has coords; try to geocode City, ST if missing
+                if _ensure_coords(j) and j.latitude is not None and j.longitude is not None:
+                    d = hav_miles(lat, lng, j.latitude, j.longitude)
+                    j.distance_from_device = round(d, 2)
+                    had_any_geocoded = True
+                else:
+                    j.distance_from_device = None
+
+            # Only filter if at least one job had a distance computed
+            if had_any_geocoded:
+                jobs = [
+                    j for j in jobs
+                    if (j.distance_from_device is not None and j.distance_from_device <= radius)
+                ]
+
     # --- Distance filtering only if a radius is provided ---
     if form.is_valid():
         commute_radius = form.cleaned_data.get("commute_radius")
