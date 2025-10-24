@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.urls import reverse
 from .models import Job, JobApplication, ApplicationStatusChange
 from django.db.models import Case, When, Value, IntegerField
-from .forms import JobSearchForm, JobForm, JobApplicationForm, QuickApplicationForm, ApplicationStatusForm
+from .forms import JobSearchForm, JobForm, QuickApplicationForm, ApplicationStatusForm
 from django.db.models import Prefetch
 from math import radians, sin, cos, asin, sqrt
 from jobs.geocoding import geocode_city_state
@@ -61,6 +61,7 @@ def job_search(request):
         if cd.get("salary_min") not in (None, ""):
             v = cd["salary_min"]
             qs = qs.filter(Q(salary_min__gte=v) | Q(salary_max__gte=v))
+
         if cd.get("salary_max") not in (None, ""):
             v = cd["salary_max"]
             qs = qs.filter(Q(salary_max__lte=v) | Q(salary_min__lte=v))
@@ -77,33 +78,75 @@ def job_search(request):
             ).distinct()
 
     qs = qs.order_by("-created_at")
-
     jobs = list(qs)
+
+    # --- Distance filtering only if a radius is provided ---
     if form.is_valid():
-        lat = form.cleaned_data.get("lat")
-        lng = form.cleaned_data.get("lng")
-        radius = form.cleaned_data.get("radius")            
-        sort_by_distance = form.cleaned_data.get("sort_by_distance")
-        filter_by_radius = form.cleaned_data.get("filter_by_radius")  
+        commute_radius = form.cleaned_data.get("commute_radius")
 
-        if lat is not None and lng is not None:
-            had_any_geocoded = False
-            for j in jobs:
-                if _ensure_coords(j):
-                    d = hav_miles(lat, lng, j.latitude, j.longitude)
-                    j.distance_miles = round(d, 2)
-                    had_any_geocoded = True
-                else:
-                    j.distance_miles = None  
+        if commute_radius not in (None, ""):
+            profile_city = profile_state = None
 
-            if filter_by_radius and had_any_geocoded and radius not in (None, ""):
-                jobs = [
-                    j for j in jobs
-                    if (j.distance_miles is not None and j.distance_miles <= radius)
-                ]
+            # 🔧 Adjust to your actual profile model fields
+            if request.user.is_authenticated and hasattr(request.user, "profile"):
+                prof = request.user.profile
 
-            if sort_by_distance:
-                jobs.sort(key=lambda x: (x.distance_miles is None, x.distance_miles if x.distance_miles is not None else 1e9))
+                # Case A: single location string like "City, ST"
+                loc = getattr(prof, "location", None)
+                if loc:
+                    parts = [p.strip() for p in str(loc).split(",")]
+                    if len(parts) >= 2:
+                        profile_city = parts[0]
+                        profile_state = parts[1]
+                    elif len(parts) == 1:
+                        # If only one token, treat it as city and leave state blank
+                        profile_city = parts[0]
+
+                # Case B: explicit fields on the profile (fallbacks)
+                if not profile_city:
+                    profile_city = getattr(prof, "city", None)
+                if not profile_state:
+                    profile_state = getattr(prof, "state", None)
+
+            profile_lat = profile_lng = None
+            if profile_city or profile_state:
+                try:
+                    # ✅ Pass two args as required
+                    latlng = geocode_city_state(profile_city or "", profile_state or "")
+                    if latlng:
+                        profile_lat, profile_lng = latlng
+                except Exception:
+                    # Leave as None if geocoding fails
+                    profile_lat = profile_lng = None
+
+            if profile_lat is None or profile_lng is None:
+                # No-op if we can't get a profile location; optionally flash a message
+                pass
+            else:
+                had_any_geocoded = False
+                for j in jobs:
+                    # Remote = 0 miles
+                    if getattr(j, "work_type", None) == Job.WorkType.REMOTE:
+                        j.distance_miles = 0.0
+                        had_any_geocoded = True
+                        continue
+
+                    if _ensure_coords(j) and j.latitude is not None and j.longitude is not None:
+                        d = hav_miles(profile_lat, profile_lng, j.latitude, j.longitude)
+                        j.distance_miles = round(d, 2)
+                        had_any_geocoded = True
+                    else:
+                        j.distance_miles = None
+
+                if had_any_geocoded:
+                    jobs = [
+                        j for j in jobs
+                        if (j.distance_miles is not None and j.distance_miles <= commute_radius)
+                    ]
+
+                if commute_radius not in (None, "") and (profile_lat is not None and profile_lng is not None):
+                    user_commute_location = {"lat": profile_lat, "lng": profile_lng, "radius": commute_radius}
+
 
     paginator = Paginator(jobs, 5)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -131,6 +174,8 @@ def job_search(request):
         )
 
     user_location = None
+    user_commute_location = None
+    
     if form.is_valid():
         lat = form.cleaned_data.get("lat")
         lng = form.cleaned_data.get("lng")
@@ -145,9 +190,9 @@ def job_search(request):
         "jobs_for_map": jobs_for_map,
         "applied_job_ids": applied_job_ids,
         "user_location": user_location,
+        "user_commute_location": user_commute_location,
     }
     return render(request, "jobs/job_search.html", context)
-
 
 # ------------------------------------------------------------
 # Detail + apply
