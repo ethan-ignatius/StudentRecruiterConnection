@@ -163,6 +163,72 @@
     </form>
   </div>
   {% endif %}
+
+  {# ---------------- Recruiter-only Applicant Map (bottom) ---------------- #}
+  {% if user.is_authenticated and user == job.posted_by %}
+    <div class="card section" id="applicant-map-section" style="margin-top:16px;">
+      <h3>Applicant Locations</h3>
+      <div id="applicant-map" style="height:420px; border-radius:8px; margin-top:8px;"></div>
+      <p class="muted" style="font-size:0.9rem; margin-top:6px;">
+        {% comment %} Always render; pins appear as applicants apply. {% endcomment %}
+        Pins are based on applicants' profile locations.
+      </p>
+    </div>
+
+    <!-- Leaflet CSS/JS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script>
+    (function(){
+      try {
+        var markers = JSON.parse('{{ applicant_markers_json|escapejs }}' || '[]');
+        var mapEl   = document.getElementById('applicant-map');
+        if (!mapEl) return;
+
+        var map = L.map('applicant-map', { scrollWheelZoom: false });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var bounds = [];
+        (markers || []).forEach(function(m){
+          var mk = L.marker([m.lat, m.lng]).addTo(map);
+          var html = '<div><strong>' + (m.label || 'Applicant') + '</strong>';
+          if (m.location) html += '<br/>' + m.location;
+          if (m.status)   html += '<br/><span style="opacity:0.8;">Status: ' + m.status.replace('_', ' ') + '</span>';
+          if (m.profile_url) html += '<br/><a href="' + m.profile_url + '">View profile</a>';
+          html += '</div>';
+          mk.bindPopup(html);
+          bounds.push([m.lat, m.lng]);
+        });
+
+        if (bounds.length === 1) {
+          map.setView(bounds[0], 9);
+        } else if (bounds.length > 1) {
+          map.fitBounds(bounds, { padding: [30, 30] });
+        } else {
+          // No markers yet: show a world-ish view
+          map.setView([20, 0], 2);
+        }
+
+        setTimeout(function(){ map.invalidateSize(); }, 250);
+      } catch (e) {
+        if (window.console && console.warn) console.warn('Applicant map failed:', e);
+      }
+    })();
+    </script>
+  {% endif %}
 </div>
 
 <style>

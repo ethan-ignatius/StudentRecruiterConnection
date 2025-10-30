@@ -13,6 +13,7 @@ from django.db.models import Prefetch
 from math import radians, sin, cos, asin, sqrt
 from jobs.geocoding import geocode_city_state
 from django.utils import timezone
+import json  # ← added
 
 # ------------------------------------------------------------
 # Search / discovery
@@ -250,12 +251,56 @@ def job_detail(request, pk):
             pass
 
     quick_form = QuickApplicationForm(user=request.user, job=job) if can_apply else None
+
+    # ---------------- Recruiter applicant map (additive only) ----------------
+    # Always render the section for the job owner; pins appear if any can be geocoded.
+    applicant_markers = []
+    try:
+        if request.user.is_authenticated and job.posted_by_id == request.user.id:
+            apps_qs = (
+                JobApplication.objects
+                .filter(job=job)
+                .select_related('applicant', 'applicant__profile')
+                .order_by('-applied_at')
+            )
+            for app in apps_qs:
+                prof = getattr(app.applicant, "profile", None)
+                loc = getattr(prof, "location", None) if prof else None
+                if not loc:
+                    continue
+                parts = [p.strip() for p in str(loc).split(",")]
+                city = parts[0] if parts else ""
+                state = parts[1] if len(parts) > 1 else ""
+                coords = geocode_city_state(city, state) if city else None
+                if not coords:
+                    continue
+                lat, lng = coords
+                label = (app.applicant.get_full_name() or getattr(app.applicant, "username", "")) or "Applicant"
+                profile_url = ""
+                try:
+                    if hasattr(app.applicant, "username"):
+                        profile_url = reverse('profiles:public_profile', args=[app.applicant.username])
+                except Exception:
+                    profile_url = ""
+                applicant_markers.append({
+                    "lat": lat,
+                    "lng": lng,
+                    "label": label,
+                    "location": loc,
+                    "status": app.status,
+                    "profile_url": profile_url,
+                })
+    except Exception:
+        # Never break the page if mapping fails
+        applicant_markers = []
+
     return render(request, 'jobs/job_detail.html', {
         'job': job,
         'can_apply': can_apply,
         'user_applied': user_applied,
         'user_application': user_application,
         'quick_form': quick_form,
+        'applicant_markers_json': json.dumps(applicant_markers),      # ← added
     })
 
 

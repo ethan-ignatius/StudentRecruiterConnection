@@ -5,7 +5,14 @@
 
   <!-- Job Details Summary (first) -->
   <div class="card">
-    <h2 style="margin: 0 0 20px;">Job Summary</h2>
+
+    <!-- Title row with back button on the top-right -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 20px;">
+      <h2 style="margin:0;">Job Summary</h2>
+      {% if request.user == application.job.posted_by %}
+        <a href="{% url 'jobs:applications' application.job.pk %}" class="btn btn-outline">← Back to All Applicants</a>
+      {% endif %}
+    </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
       <div>
@@ -153,22 +160,21 @@
 
 /* Scoped tweaks for the status form only */
 .application-status-form select[name="status"] {
-  width: auto;          /* don't stretch */
-  min-width: 180px;     /* readable but not huge */
-  max-width: 260px;     /* cap width */
-  flex: 0 0 auto;       /* prevent flex-grow */
+  width: auto;
+  min-width: 180px;
+  max-width: 260px;
+  flex: 0 0 auto;
 }
 
 .application-status-form {
-  justify-content: center; /* center dropdown + button */
+  justify-content: center;
 }
 
 .application-status-form .btn {
-  min-width: 150px;     /* ensure text stays on one line */
-  white-space: nowrap;  /* never wrap inside button */
+  min-width: 150px;
+  white-space: nowrap;
 }
 
-/* Mobile: allow wrapping if space is tight, button full width */
 @media (max-width: 480px) {
   .application-status-form { flex-wrap: wrap; }
   .application-status-form .btn { width: 100%; }
