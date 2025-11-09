@@ -114,6 +114,27 @@ th { background: #f3f4f6; color: #000; }
   border: 1px solid var(--brand-blue);
 }
 
+/* ============= Admin Button ============= */
+.btn-admin {
+  background: #dc2626 !important;
+  color: white !important;
+  border: 1px solid #b91c1c !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-admin:hover {
+  background: #b91c1c !important;
+  color: white !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.btn-admin:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+}
+
 /* ============= Forms ============= */
 form { display: block; }
 label { font-weight: 600; color: #111827; }

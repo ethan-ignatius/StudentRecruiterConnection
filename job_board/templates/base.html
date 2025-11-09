@@ -46,6 +46,14 @@
             <a href="{% url 'accounts:inbox' %}">Inbox</a>
           {% endif %}
 
+          {% if user.is_staff %}
+            <a href="{% url 'admin:index' %}" class="btn btn-admin" 
+               style="background: #dc2626; color: white; margin-right: 8px;" 
+               title="Admin Panel">
+              🛡️ Admin
+            </a>
+          {% endif %}
+
           <form method="post" action="{% url 'logout' %}" style="display:inline;">
             {% csrf_token %}
             <button class="btn btn-outline" type="submit">Logout</button>
