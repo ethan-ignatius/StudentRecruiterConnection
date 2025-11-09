@@ -17,6 +17,7 @@ class Job(models.Model):
         ACTIVE = "ACTIVE", "Active"
         CLOSED = "CLOSED", "Closed"
         DRAFT = "DRAFT", "Draft"
+        REMOVED = "REMOVED", "Removed by Admin"
 
     # Basic job information
     title = models.CharField(max_length=200)
@@ -49,6 +50,11 @@ class Job(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     expires_at = models.DateTimeField(null=True, blank=True)
+    
+    # Moderation fields
+    moderated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="moderated_jobs")
+    moderated_at = models.DateTimeField(null=True, blank=True)
+    moderation_notes = models.TextField(blank=True, help_text="Notes from administrator about removal or other actions")
     
     class Meta:
         ordering = ["-created_at"]
@@ -314,3 +320,30 @@ class SearchNotification(models.Model):
         """Return human-readable time since notification"""
         from django.utils.timesince import timesince
         return timesince(self.sent_at)
+
+
+class JobReport(models.Model):
+    """Model for users to report inappropriate job posts"""
+    REASON_CHOICES = [
+        ('spam', 'Spam'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('fake', 'Fake Job Posting'),
+        ('discriminatory', 'Discriminatory'),
+        ('other', 'Other'),
+    ]
+    
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='reports')
+    reported_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES)
+    description = models.TextField(help_text="Please describe the issue")
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed = models.BooleanField(default=False)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_reports')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['job', 'reported_by']  # One report per user per job
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Report for {self.job.title} by {self.reported_by.username}"

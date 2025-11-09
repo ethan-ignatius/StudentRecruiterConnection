@@ -1,0 +1,22 @@
+{% extends "admin/index.html" %}
+{% load admin_urls %}
+
+{% block content %}
+{{ block.super }}
+
+{% if moderation_dashboard_url %}
+<div class="module" style="margin-top: 20px;">
+    <h2>Job Moderation</h2>
+    <div class="recent-actions-module">
+        <p>
+            <a href="{{ moderation_dashboard_url }}" class="button" style="background: #417690; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">
+                🛡️ Open Moderation Dashboard
+            </a>
+        </p>
+        <p style="color: #666; font-size: 0.9rem;">
+            Review reported jobs, monitor recent posts, and manage content moderation.
+        </p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

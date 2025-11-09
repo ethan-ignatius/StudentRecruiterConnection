@@ -6,13 +6,16 @@ from django.http import JsonResponse, Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from django.urls import reverse
-from .models import Job, JobApplication, ApplicationStatusChange
+from .models import Job, JobApplication, ApplicationStatusChange, JobReport
 from django.db.models import Case, When, Value, IntegerField
-from .forms import JobSearchForm, JobForm, QuickApplicationForm, ApplicationStatusForm
+from .forms import JobSearchForm, JobForm, QuickApplicationForm, ApplicationStatusForm, JobReportForm
+from .notifications import notify_admins_of_report
 from django.db.models import Prefetch
 from math import radians, sin, cos, asin, sqrt
 from jobs.geocoding import geocode_city_state
 from django.utils import timezone
+from django.contrib.admin.views.decorators import staff_member_required
+from datetime import timedelta
 import json  # ← added
 
 # ------------------------------------------------------------
@@ -35,7 +38,7 @@ def _ensure_coords(job):
     return False
 
 def hav_miles(lat1, lon1, lat2, lon2):
-    dlat = radians(lat2 - lat1); dlon = radians(lon2 - lon1)
+    dlat = radians(lat2 - lat1); dlon = radians(lat2 - lon1)
     a = sin(dlat/2)**2 + cos(radians(lat1))*cos(radians(lat2))*sin(dlon/2)**2
     return 2 * EARTH_MI * asin(sqrt(a))
 
@@ -294,6 +297,11 @@ def job_detail(request, pk):
         # Never break the page if mapping fails
         applicant_markers = []
 
+    # Check for reports (admin only)
+    job_reports = []
+    if request.user.is_authenticated and request.user.is_staff:
+        job_reports = JobReport.objects.filter(job=job).select_related('reported_by').order_by('-created_at')
+
     return render(request, 'jobs/job_detail.html', {
         'job': job,
         'can_apply': can_apply,
@@ -301,6 +309,7 @@ def job_detail(request, pk):
         'user_application': user_application,
         'quick_form': quick_form,
         'applicant_markers_json': json.dumps(applicant_markers),      # ← added
+        'job_reports': job_reports,
     })
 
 
@@ -661,3 +670,65 @@ def update_application_status(request, pk):
         messages.success(request, f"Status updated to {application.get_status_display()}.")
 
     return redirect('jobs:application_detail', pk=application.pk)
+
+@staff_member_required
+def moderation_dashboard(request):
+    """Admin dashboard for moderating job posts"""
+    # Get recent jobs (last 7 days)
+    week_ago = timezone.now() - timedelta(days=7)
+    recent_jobs = Job.objects.filter(
+        created_at__gte=week_ago
+    ).select_related('posted_by').order_by('-created_at')[:20]
+    
+    # Get unreviewed reports
+    unreviewed_reports = JobReport.objects.filter(
+        reviewed=False
+    ).select_related('job', 'reported_by').order_by('-created_at')[:10]
+    
+    # Get moderation statistics
+    stats = {
+        'active_jobs': Job.objects.filter(status='ACTIVE').count(),
+        'removed_jobs': Job.objects.filter(status='REMOVED').count(),
+        'closed_jobs': Job.objects.filter(status='CLOSED').count(),
+        'total_jobs': Job.objects.count(),
+        'unreviewed_reports': JobReport.objects.filter(reviewed=False).count(),
+        'total_reports': JobReport.objects.count(),
+    }
+    
+    return render(request, 'admin/jobs/moderation_dashboard.html', {
+        'recent_jobs': recent_jobs,
+        'unreviewed_reports': unreviewed_reports,
+        'stats': stats,
+    })
+
+@login_required
+def report_job(request, pk):
+    """Allow users to report inappropriate job posts"""
+    job = get_object_or_404(Job, pk=pk)
+    
+    # Check if user has already reported this job
+    existing_report = JobReport.objects.filter(job=job, reported_by=request.user).first()
+    if existing_report:
+        messages.info(request, "You have already reported this job.")
+        return redirect('jobs:detail', pk=pk)
+    
+    if request.method == 'POST':
+        form = JobReportForm(request.POST)
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.job = job
+            report.reported_by = request.user
+            report.save()
+            
+            # Notify administrators
+            notify_admins_of_report(report)
+            
+            messages.success(request, "Thank you for reporting this job. Our team will review it.")
+            return redirect('jobs:detail', pk=pk)
+    else:
+        form = JobReportForm()
+    
+    return render(request, 'jobs/report_job.html', {
+        'form': form,
+        'job': job,
+    })

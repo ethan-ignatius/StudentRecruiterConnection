@@ -38,8 +38,35 @@
             <a href="{% url 'jobs:applications' job.pk %}" class="btn btn-outline">View Applications</a>
           </div>
         {% endif %}
+        
+        {% if user.is_authenticated and user != job.posted_by %}
+          <div style="margin-top: 12px;">
+            <a href="{% url 'jobs:report_job' job.pk %}" class="btn btn-text" style="color: #6b7280; font-size: 0.9rem;">
+              🚩 Report Job
+            </a>
+          </div>
+        {% endif %}
       </div>
     </div>
+
+    {% if user.is_staff and job_reports %}
+    <!-- Admin: Show Reports -->
+    <div class="admin-alerts" style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 16px 0;">
+      <h4 style="color: #92400e; margin: 0 0 12px 0; font-size: 1rem;">⚠️ This job has been reported ({{ job_reports.count }} report{{ job_reports.count|pluralize }})</h4>
+      {% for report in job_reports|slice:":3" %}
+        <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 8px;">
+          <strong>{{ report.get_reason_display }}</strong> - Reported by {{ report.reported_by.username }}
+          <small style="color: #6b7280; display: block;">{{ report.created_at|date:"M d, Y H:i" }}</small>
+          {% if report.description %}
+            <p style="margin: 8px 0 0 0; color: #374151;">{{ report.description|truncatechars:100 }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <a href="{% url 'admin:jobs_jobreport_changelist' %}?job__id__exact={{ job.pk }}" style="color: #92400e; font-weight: 600;">
+        View all reports in admin →
+      </a>
+    </div>
+    {% endif %}
 
     <div class="job-meta-bar">
       <div class="job-meta-item">

@@ -5,6 +5,9 @@ from typing import List, Iterable, TYPE_CHECKING
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import QuerySet
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth import get_user_model
 
 from .models import SavedCandidateSearch, SearchNotification
 
@@ -198,3 +201,51 @@ def notify_saved_searches_for_profile(profile) -> int:
             updated += 1
 
     return updated
+
+
+def notify_admins_of_report(job_report):
+    """Send email notification to admin users when a job is reported"""
+    try:
+        User = get_user_model()
+        
+        # Get all admin users
+        admin_users = User.objects.filter(is_staff=True, is_active=True)
+        admin_emails = [user.email for user in admin_users if user.email]
+        
+        if not admin_emails:
+            return False
+            
+        subject = f"Job Report: {job_report.job.title} at {job_report.job.company}"
+        
+        message = f"""
+A job posting has been reported by a user and requires review.
+
+Job Details:
+- Title: {job_report.job.title}
+- Company: {job_report.job.company}
+- Posted by: {job_report.job.posted_by.username}
+
+Report Details:
+- Reported by: {job_report.reported_by.username}
+- Reason: {job_report.get_reason_display()}
+- Description: {job_report.description}
+- Date: {job_report.created_at.strftime('%B %d, %Y at %I:%M %p')}
+
+Please review this report in the admin panel.
+
+Moderation Dashboard: /jobs/admin/moderation-dashboard/
+        """
+        
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=admin_emails,
+            fail_silently=True,
+        )
+        return True
+        
+    except Exception as e:
+        # Log the error but don't fail the report submission
+        print(f"Failed to send admin notification email: {e}")
+        return False

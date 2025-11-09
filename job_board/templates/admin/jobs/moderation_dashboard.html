@@ -1,0 +1,138 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls %}
+
+{% block title %}Job Moderation Dashboard{% endblock %}
+
+{% block content %}
+<h1>Job Moderation Dashboard</h1>
+
+<div class="module">
+    <h2>Recent Jobs (Last 7 Days)</h2>
+    <div class="results">
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Company</th>
+                    <th>Posted By</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in recent_jobs %}
+                <tr>
+                    <td><a href="{% url 'admin:jobs_job_change' job.pk %}">{{ job.title }}</a></td>
+                    <td>{{ job.company }}</td>
+                    <td>{{ job.posted_by.username }}</td>
+                    <td>
+                        <span style="color: {% if job.status == 'ACTIVE' %}#10b981{% elif job.status == 'REMOVED' %}#ef4444{% else %}#6b7280{% endif %};">
+                            {{ job.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ job.created_at|date:"M d, Y H:i" }}</td>
+                    <td>
+                        {% if job.status == 'ACTIVE' %}
+                            <a href="{% url 'admin:jobs_job_changelist' %}?id={{ job.pk }}&action=remove_jobs" 
+                               onclick="return confirm('Remove this job?')" 
+                               style="color: #ef4444;">Remove</a>
+                        {% elif job.status == 'REMOVED' %}
+                            <a href="{% url 'admin:jobs_job_changelist' %}?id={{ job.pk }}&action=restore_jobs" 
+                               onclick="return confirm('Restore this job?')" 
+                               style="color: #10b981;">Restore</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">No recent jobs found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="module">
+    <h2>Reported Jobs (Needs Review)</h2>
+    {% if unreviewed_reports %}
+        <div class="results">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Job</th>
+                        <th>Reported By</th>
+                        <th>Reason</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in unreviewed_reports %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'admin:jobs_job_change' report.job.pk %}">{{ report.job.title }}</a>
+                            <br><small style="color: #666;">{{ report.job.company }}</small>
+                        </td>
+                        <td>{{ report.reported_by.username }}</td>
+                        <td>
+                            <strong>{{ report.get_reason_display }}</strong>
+                            {% if report.description %}
+                                <br><small>{{ report.description|truncatechars:50 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ report.created_at|date:"M d, H:i" }}</td>
+                        <td>
+                            <a href="{% url 'admin:jobs_jobreport_change' report.pk %}" style="color: #007cba;">Review</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No unreviewed reports.</p>
+    {% endif %}
+</div>
+
+<div class="module">
+    <h2>Moderation Statistics</h2>
+    <div class="results">
+        <table>
+            <tr>
+                <th>Active Jobs</th>
+                <td>{{ stats.active_jobs }}</td>
+            </tr>
+            <tr>
+                <th>Removed Jobs</th>
+                <td>{{ stats.removed_jobs }}</td>
+            </tr>
+            <tr>
+                <th>Closed Jobs</th>
+                <td>{{ stats.closed_jobs }}</td>
+            </tr>
+            <tr>
+                <th>Total Jobs</th>
+                <td>{{ stats.total_jobs }}</td>
+            </tr>
+            <tr>
+                <th>Unreviewed Reports</th>
+                <td>{{ stats.unreviewed_reports }}</td>
+            </tr>
+            <tr>
+                <th>Total Reports</th>
+                <td>{{ stats.total_reports }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 20px;">
+    <a href="{% url 'admin:jobs_job_changelist' %}" class="button">View All Jobs</a>
+    <a href="{% url 'admin:jobs_job_changelist' %}?mod_status=removed" class="button">View Removed Jobs</a>
+    <a href="{% url 'admin:jobs_jobreport_changelist' %}" class="button">View All Reports</a>
+    <a href="{% url 'admin:jobs_jobreport_changelist' %}?reviewed__exact=0" class="button">View Unreviewed Reports</a>
+</div>
+
+{% endblock %}

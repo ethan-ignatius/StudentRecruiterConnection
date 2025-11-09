@@ -1,7 +1,7 @@
 from django import forms
 from django.db.models import Q
 from profiles.models import Skill
-from .models import Job, JobApplication
+from .models import Job, JobApplication, JobReport
 
 class JobSearchForm(forms.Form):
     q = forms.CharField(
@@ -367,3 +367,20 @@ class ApplicationStatusForm(forms.ModelForm):
             and val == JobApplication.Status.ACCEPTED):
             raise forms.ValidationError("Recruiters can’t mark an application as Accepted.")
         return val
+
+class JobReportForm(forms.ModelForm):
+    class Meta:
+        model = JobReport
+        fields = ['reason', 'description']
+        widgets = {
+            'reason': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Please provide details about why you are reporting this job...',
+                'class': 'form-textarea'
+            })
+        }
+        labels = {
+            'reason': 'Reason for reporting',
+            'description': 'Description'
+        }
