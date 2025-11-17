@@ -12,3 +12,6 @@ python manage.py migrate
 
 To Run the server run the following (in the job board directory)
 python manage.py runserver
+
+To create admin account:
+python manage.py createsuperuser
