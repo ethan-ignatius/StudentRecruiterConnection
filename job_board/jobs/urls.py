@@ -35,4 +35,10 @@ urlpatterns = [
     
     # Admin moderation
     path("admin/moderation-dashboard/", views.moderation_dashboard, name="moderation_dashboard"),
+
+    # CSV Export (User Story 20)
+    path("<int:job_pk>/applications/export/", views.export_job_applications_csv, name="export_job_applications"),
+    path("export/all-applications/", views.export_all_applications_csv, name="export_all_applications"),
+    path("export/jobs/", views.export_jobs_csv, name="export_jobs"),
+    path("export/users/", views.export_users_csv, name="export_users"),
 ]

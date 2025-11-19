@@ -133,6 +133,10 @@
     <a href="{% url 'admin:jobs_job_changelist' %}?mod_status=removed" class="button">View Removed Jobs</a>
     <a href="{% url 'admin:jobs_jobreport_changelist' %}" class="button">View All Reports</a>
     <a href="{% url 'admin:jobs_jobreport_changelist' %}?reviewed__exact=0" class="button">View Unreviewed Reports</a>
+    <br><br>
+    <strong style="display:block;margin-bottom:10px;">Export Data (CSV)</strong>
+    <a href="{% url 'jobs:export_jobs' %}" class="button" style="background:#059669;color:white;">Export All Jobs</a>
+    <a href="{% url 'jobs:export_users' %}" class="button" style="background:#059669;color:white;">Export All Users</a>
 </div>
 
 {% endblock %}
