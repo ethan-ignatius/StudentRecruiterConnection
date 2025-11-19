@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse, Http404, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from django.urls import reverse
@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.contrib.admin.views.decorators import staff_member_required
 from datetime import timedelta
 import json  # ← added
+import csv
 
 # ------------------------------------------------------------
 # Search / discovery
@@ -732,3 +733,243 @@ def report_job(request, pk):
         'form': form,
         'job': job,
     })
+
+# ------------------------------------------------------------
+# CSV Export Views (User Story 20)
+# ------------------------------------------------------------
+
+@login_required
+def export_job_applications_csv(request, job_pk):
+    """Export all applications for a specific job as CSV (Recruiter only)"""
+    job = get_object_or_404(Job, pk=job_pk)
+
+    # Only the job owner can export applications
+    if job.posted_by != request.user:
+        raise Http404("Job not found")
+
+    # Create the HttpResponse object with CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="applications_{job.title.replace(" ", "_")}_{timezone.now().strftime("%Y%m%d")}.csv"'
+
+    writer = csv.writer(response)
+    # Write header row
+    writer.writerow([
+        'Application ID',
+        'Applicant Name',
+        'Applicant Email',
+        'Applicant Username',
+        'Status',
+        'Applied Date',
+        'Last Updated',
+        'Cover Letter Preview',
+        'Applicant Location',
+        'Applicant Headline',
+        'Skills'
+    ])
+
+    # Query all applications for this job
+    applications = JobApplication.objects.filter(job=job).select_related(
+        'applicant',
+        'applicant__profile'
+    ).prefetch_related('applicant__profile__skills').order_by('-applied_at')
+
+    # Write data rows
+    for app in applications:
+        profile = getattr(app.applicant, 'profile', None)
+        skills = ', '.join([skill.name for skill in profile.skills.all()]) if profile else ''
+        cover_letter_preview = app.cover_letter[:100] + '...' if len(app.cover_letter) > 100 else app.cover_letter
+
+        writer.writerow([
+            app.id,
+            app.applicant.get_full_name() or app.applicant.username,
+            app.applicant.email,
+            app.applicant.username,
+            app.get_status_display(),
+            app.applied_at.strftime('%Y-%m-%d %H:%M'),
+            app.updated_at.strftime('%Y-%m-%d %H:%M'),
+            cover_letter_preview,
+            profile.location if profile else '',
+            profile.headline if profile else '',
+            skills
+        ])
+
+    return response
+
+@login_required
+def export_all_applications_csv(request):
+    """Export all applications for the logged-in recruiter's jobs as CSV"""
+    if not request.user.is_recruiter():
+        raise Http404("Access denied")
+
+    # Get all jobs posted by this recruiter
+    recruiter_jobs = Job.objects.filter(posted_by=request.user)
+
+    # Create the HttpResponse object with CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="all_applications_{request.user.username}_{timezone.now().strftime("%Y%m%d")}.csv"'
+
+    writer = csv.writer(response)
+    # Write header row
+    writer.writerow([
+        'Job Title',
+        'Job Company',
+        'Application ID',
+        'Applicant Name',
+        'Applicant Email',
+        'Applicant Username',
+        'Status',
+        'Applied Date',
+        'Last Updated',
+        'Cover Letter Preview',
+        'Applicant Location',
+        'Applicant Headline',
+        'Skills'
+    ])
+
+    # Query all applications for recruiter's jobs
+    applications = JobApplication.objects.filter(
+        job__in=recruiter_jobs
+    ).select_related(
+        'job',
+        'applicant',
+        'applicant__profile'
+    ).prefetch_related('applicant__profile__skills').order_by('-applied_at')
+
+    # Write data rows
+    for app in applications:
+        profile = getattr(app.applicant, 'profile', None)
+        skills = ', '.join([skill.name for skill in profile.skills.all()]) if profile else ''
+        cover_letter_preview = app.cover_letter[:100] + '...' if len(app.cover_letter) > 100 else app.cover_letter
+
+        writer.writerow([
+            app.job.title,
+            app.job.company,
+            app.id,
+            app.applicant.get_full_name() or app.applicant.username,
+            app.applicant.email,
+            app.applicant.username,
+            app.get_status_display(),
+            app.applied_at.strftime('%Y-%m-%d %H:%M'),
+            app.updated_at.strftime('%Y-%m-%d %H:%M'),
+            cover_letter_preview,
+            profile.location if profile else '',
+            profile.headline if profile else '',
+            skills
+        ])
+
+    return response
+
+@staff_member_required
+def export_jobs_csv(request):
+    """Export all jobs as CSV (Admin only)"""
+    # Create the HttpResponse object with CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="all_jobs_{timezone.now().strftime("%Y%m%d")}.csv"'
+
+    writer = csv.writer(response)
+    # Write header row
+    writer.writerow([
+        'Job ID',
+        'Title',
+        'Company',
+        'Location',
+        'Work Type',
+        'Status',
+        'Posted By',
+        'Posted Date',
+        'Salary Min',
+        'Salary Max',
+        'Currency',
+        'Visa Sponsorship',
+        'Required Skills',
+        'Nice to Have Skills',
+        'Application Count',
+        'Description Preview'
+    ])
+
+    # Query all jobs
+    jobs = Job.objects.all().select_related('posted_by').prefetch_related(
+        'required_skills',
+        'nice_to_have_skills',
+        'applications'
+    ).order_by('-created_at')
+
+    # Write data rows
+    for job in jobs:
+        required_skills = ', '.join([skill.name for skill in job.required_skills.all()])
+        nice_skills = ', '.join([skill.name for skill in job.nice_to_have_skills.all()])
+        description_preview = job.description[:200] + '...' if len(job.description) > 200 else job.description
+
+        writer.writerow([
+            job.id,
+            job.title,
+            job.company,
+            job.location,
+            job.get_work_type_display(),
+            job.get_status_display(),
+            job.posted_by.username,
+            job.created_at.strftime('%Y-%m-%d %H:%M'),
+            job.salary_min or '',
+            job.salary_max or '',
+            job.salary_currency,
+            'Yes' if job.visa_sponsorship else 'No',
+            required_skills,
+            nice_skills,
+            job.applications.count(),
+            description_preview.replace('\n', ' ').replace('\r', ' ')
+        ])
+
+    return response
+
+@staff_member_required
+def export_users_csv(request):
+    """Export all users as CSV (Admin only)"""
+    from accounts.models import User
+
+    # Create the HttpResponse object with CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="all_users_{timezone.now().strftime("%Y%m%d")}.csv"'
+
+    writer = csv.writer(response)
+    # Write header row
+    writer.writerow([
+        'User ID',
+        'Username',
+        'Email',
+        'First Name',
+        'Last Name',
+        'Account Type',
+        'Date Joined',
+        'Last Login',
+        'Is Active',
+        'Is Staff',
+        'Profile Headline',
+        'Profile Location',
+        'Skills Count'
+    ])
+
+    # Query all users
+    users = User.objects.all().prefetch_related('profile__skills').order_by('-date_joined')
+
+    # Write data rows
+    for user in users:
+        profile = getattr(user, 'profile', None)
+        skills_count = profile.skills.count() if profile else 0
+
+        writer.writerow([
+            user.id,
+            user.username,
+            user.email,
+            user.first_name,
+            user.last_name,
+            user.get_account_type_display(),
+            user.date_joined.strftime('%Y-%m-%d %H:%M'),
+            user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else '',
+            'Yes' if user.is_active else 'No',
+            'Yes' if user.is_staff else 'No',
+            profile.headline if profile else '',
+            profile.location if profile else '',
+            skills_count
+        ])
+
+    return response

@@ -7,7 +7,10 @@
       <h1>My Job Postings</h1>
       <p class="page-description">Create, edit or close job postings. Applications remain visible even after a job is closed.</p>
     </div>
-    <a href="{% url 'jobs:post' %}" class="btn">Post a Job</a>
+    <div>
+      <a href="{% url 'jobs:export_all_applications' %}" class="btn btn-outline" style="background:#059669;color:white;margin-right:8px;">Export All Applications CSV</a>
+      <a href="{% url 'jobs:post' %}" class="btn">Post a Job</a>
+    </div>
   </div>
 
   {% if jobs %}

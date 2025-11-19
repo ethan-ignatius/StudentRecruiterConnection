@@ -15,6 +15,7 @@
     {% endif %}
   </div>
   <div>
+    <a href="{% url 'jobs:export_job_applications' job.pk %}" class="btn btn-outline" style="background:#059669;color:white;">Export CSV</a>
     <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline">Job Page</a>
     <a href="{% url 'jobs:my_jobs' %}" class="btn">Back to My Jobs</a>
   </div>
