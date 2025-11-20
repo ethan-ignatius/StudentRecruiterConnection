@@ -1,5 +1,60 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h1>Recommended Candidates</h1>
-<p>View a list of recommended candidates.</p>
+<div class="container my-4">
+    <h1 class="mb-4">Recommended Candidates for "{{ job.title }}"</h1>
+
+    {% if candidates %}
+        {% for entry in candidates %}
+            <div class="card mb-5 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        {% if entry.profile.user.get_full_name %}
+                            {{ entry.profile.user.get_full_name }}
+                        {% else %}
+                            {{ entry.profile.user.username }}
+                        {% endif %}
+                    </h2>
+                    <p class="text-muted mb-1"><strong>Score:</strong> {{ entry.score }}</p>
+
+
+                    {% if entry.profile.headline %}
+                        <p class="card-subtitle mb-2 text-muted">{{ entry.profile.headline }}</p>
+                    {% endif %}
+                    {% if entry.profile.location %}
+                        <p class="mb-2"><strong>Location:</strong> {{ entry.profile.location }}</p>
+                    {% endif %}
+
+                    <p class="mb-1">
+                        <strong>Matched Required Skills:</strong>
+                        {% if entry.matched_required %}
+                            {% for skill in entry.matched_required %}
+                                <span class="skill-tag">{{ skill.name }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </p>
+
+                    <p class="mb-2">
+                        <strong>Matched Nice-to-Have Skills:</strong>
+                        {% if entry.matched_nice %}
+                            {% for skill in entry.matched_nice %}
+                                <span class="skill-tag">{{ skill.name }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </p>
+
+                    <a href="{% url 'profiles:public_profile' entry.profile.user.username %}" class="btn btn-outline-success btn-sm">
+                        View Full Profile
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No matching candidates found for this job.</p>
+    {% endif %}
+</div>
 {% endblock %}
