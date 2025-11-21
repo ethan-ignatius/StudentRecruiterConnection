@@ -2,7 +2,21 @@
 
 {% block content %}
 <div class="container my-4">
-    <h1 class="mb-4">Recommended Candidates for "{{ job.title }}"</h1>
+        <div class="mb-4"
+         style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:nowrap;">
+        <div style="flex:1 1 auto; min-width:0;">
+            <h2 class="mb-1">Recommended Candidates for "{{ job.title }}"</h2>
+            <p class="text-muted mb-0">
+                Score = 2 × (number of matched <strong>required</strong> skills)
+                + 1 × (number of matched <strong>nice-to-have</strong> skills).
+            </p>
+        </div>
+        <div style="flex:0 0 auto; white-space:nowrap;">
+            <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline">
+                ← My Job Postings
+            </a>
+        </div>
+    </div>
 
     {% if candidates %}
         {% for entry in candidates %}

@@ -8,7 +8,7 @@
       <p class="page-description">Create, edit or close job postings. Applications remain visible even after a job is closed.</p>
     </div>
     <div>
-      <a href="{% url 'jobs:export_all_applications' %}" class="btn btn-outline" style="background:#059669;color:white;margin-right:8px;">Export All Applications CSV</a>
+      <a href="{% url 'jobs:export_all_applications' %}" class="btn">Export Applications CSV</a>
       <a href="{% url 'jobs:post' %}" class="btn">Post a Job</a>
     </div>
   </div>
@@ -41,7 +41,7 @@
           <a class="btn btn-outline" href="{% url 'jobs:detail' job.pk %}">View</a>
           <a class="btn btn-outline" href="{% url 'jobs:edit' job.pk %}">Edit</a>
           <a class="btn btn-outline" href="{% url 'jobs:applications' job.pk %}">Applications</a>
-          <a class="btn btn-outline" href="{% url 'recommended:recommended_candidates' job.id %}">View Recommended Candidates</a>
+          <a class="btn btn-outline" href="{% url 'recommended:recommended_candidates' job.id %}">Recommended Candidates</a>
 
           {% if job.status == job.Status.ACTIVE %}
             <form method="post" action="{% url 'jobs:close' job.pk %}" style="display:inline;">{% csrf_token %}
