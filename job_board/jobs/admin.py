@@ -5,6 +5,10 @@ from django.urls import reverse
 from django.contrib.admin import SimpleListFilter
 from django.utils.safestring import mark_safe
 from .models import Job, JobApplication, JobReport
+from accounts.models import User
+from profiles.models import JobSeekerProfile, Skill
+from accounts.admin import UserAdmin
+from profiles.admin import ProfileAdmin
 
 
 class ModerationStatusFilter(SimpleListFilter):
@@ -196,15 +200,15 @@ class JobReportAdmin(admin.ModelAdmin):
     mark_unreviewed.short_description = "Mark selected reports as unreviewed"
 
 
-# Custom admin site configuration
 class JobBoardAdminSite(admin.AdminSite):
     site_header = "Job Board Administration"
     site_title = "Job Board Admin"
     index_title = "Welcome to Job Board Administration"
-    
+    index_template = "admin/custom_index.html"  # ✅ use our custom template
+
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}
-        # Add moderation dashboard link to admin index
+        # Add moderation dashboard link to admin index (still harmless to keep)
         moderation_url = reverse('jobs:moderation_dashboard')
         extra_context['moderation_dashboard_url'] = moderation_url
         return super().index(request, extra_context)
@@ -213,6 +217,9 @@ class JobBoardAdminSite(admin.AdminSite):
 admin_site = JobBoardAdminSite(name='admin')
 
 # Re-register all models with the custom admin site
+admin_site.register(User, UserAdmin)
 admin_site.register(Job, JobAdmin)
+admin_site.register(JobSeekerProfile, ProfileAdmin)
+admin_site.register(Skill)
 admin_site.register(JobApplication, JobApplicationAdmin)
 admin_site.register(JobReport, JobReportAdmin)

@@ -1,0 +1,14 @@
+{# job_board/templates/admin/custom_index.html #}
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{# Keep all default layout; just add our button under the page title #}
+{% block content_title %}
+    {{ block.super }}
+
+    <p style="margin-top: 10px;">
+        <a href="{% url 'jobs:moderation_dashboard' %}" class="button">
+            🛡️ Open Moderation Dashboard
+        </a>
+    </p>
+{% endblock %}
