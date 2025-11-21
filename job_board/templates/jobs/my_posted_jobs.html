@@ -41,6 +41,7 @@
           <a class="btn btn-outline" href="{% url 'jobs:detail' job.pk %}">View</a>
           <a class="btn btn-outline" href="{% url 'jobs:edit' job.pk %}">Edit</a>
           <a class="btn btn-outline" href="{% url 'jobs:applications' job.pk %}">Applications</a>
+          <a class="btn btn-outline" href="{% url 'recommended:recommended_candidates' job.id %}">View Recommended Candidates</a>
 
           {% if job.status == job.Status.ACTIVE %}
             <form method="post" action="{% url 'jobs:close' job.pk %}" style="display:inline;">{% csrf_token %}
