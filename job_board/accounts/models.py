@@ -9,7 +9,7 @@ class User(AbstractUser):
     account_type = models.CharField(
         max_length=20,
         choices=AccountType.choices,
-        default=AccountType.JOB_SEEKER,
+        default=AccountType.RECRUITER,
         help_text="Controls which features the account can access.",
     )
 

@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from . import candidate_views  
+from . import candidate_views
 from . import notification_views
 
 app_name = "jobs"
@@ -20,7 +20,7 @@ urlpatterns = [
     path("application/<int:pk>/accept/", views.accept_offer, name="application_accept"),
     path("application/<int:pk>/status/", views.update_application_status, name="application_status_update"),
     path("<int:pk>/report/", views.report_job, name="report_job"),
-    
+
     # Candidate Search URLs
     path("candidates/", candidate_views.candidate_search, name="candidate_search"),
     path("candidates/save-search/", candidate_views.save_candidate_search, name="save_candidate_search"),
@@ -30,9 +30,22 @@ urlpatterns = [
     path("candidates/saved-searches/<int:pk>/toggle-notifications/", candidate_views.toggle_search_notifications, name="toggle_search_notifications"),
 
     path("notifications/", notification_views.notifications_list, name="notifications"),
-    path("notifications/<int:pk>/read/", notification_views.mark_notification_read, name="mark_notification_read"),
-    path("notifications/mark-all-read/", notification_views.mark_all_read, name="mark_all_read"),
-    
+    path(
+        "notifications/<int:pk>/",
+        notification_views.notification_detail,
+        name="notification_detail",
+    ),
+    path(
+        "notifications/<int:pk>/read/",
+        notification_views.mark_notification_read,
+        name="mark_notification_read",
+    ),
+    path(
+        "notifications/mark-all-read/",
+        notification_views.mark_all_read,
+        name="mark_all_read",
+    ),
+
     # Admin moderation
     path("admin/moderation-dashboard/", views.moderation_dashboard, name="moderation_dashboard"),
 
